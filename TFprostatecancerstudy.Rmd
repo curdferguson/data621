@@ -1,0 +1,130 @@
+---
+title: "Prostate Cancer Study"
+author: "Tyler Frankenberg"
+date: "2/13/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Import packages 
+
+
+```{r, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+
+```
+
+
+
+## Import data
+
+
+```{r, message=FALSE, warning=FALSE}
+
+url <- "https://raw.githubusercontent.com/curdferguson/data621/main/datasets/prostate.txt"
+
+prostate <- read_tsv(url, skip = 1, col_names = c("index", "lcavol", "lweight", "age", "lbph", "svi", "lcp", "gleason", "pgg45", "lpsa"), show_col_types=FALSE)
+
+prostate <- prostate[,2:10]
+prostate$svi <- factor(prostate$svi)
+                        
+```
+
+
+
+## Glimpse dataset structure and each column's summary statistics
+
+
+```{r, message=FALSE, warning=FALSE}
+
+prostate %>% head(5)
+prostate[,1:5] %>% summary()
+cat("\n")
+prostate[,6:9] %>% summary()
+                        
+```
+
+### View histograms of numerical variables' distribution
+
+```{r, message=FALSE, warning=FALSE}
+
+prostate_numeric <- prostate %>% select(where(is.numeric))
+prostate_numeric_long <- prostate_numeric %>% pivot_longer(colnames(prostate_numeric)) %>% as.data.frame()
+
+ggplot(data=prostate_numeric_long, aes(x=value)) + 
+  geom_histogram(aes(y=..density..), bins=20) + 
+  facet_wrap(~ name, scales = "free")
+
+```
+
+
+### View relationships between each pair of variables in the model
+
+
+```{r, message=FALSE, warning=FALSE}
+
+pairs(prostate)
+
+```
+
+
+### Create a model through forward stepwise selection and graph change in $R^2$, Residual Standard Error
+
+
+```{r, message=FALSE, warning=FALSE}
+
+lm1 <- lm(lpsa ~ lcavol, data=prostate)
+lm1_sum <- summary(lm1, cor=TRUE)
+
+lm2 <- lm(lpsa ~ lcavol + lweight, data=prostate)
+lm2_sum <- summary(lm2, cor=TRUE)
+
+lm3 <- lm(lpsa ~ lcavol + lweight + svi, data=prostate)
+lm3_sum <- summary(lm3, cor=TRUE)
+
+lm4 <- lm(lpsa ~ lcavol + lweight + svi + age, data=prostate)
+lm4_sum <- summary(lm4, cor=TRUE)
+
+lm5 <- lm(lpsa ~ lcavol + lweight + svi + age + lcp, data=prostate)
+lm5_sum <- summary(lm5, cor=TRUE)
+
+lm6 <- lm(lpsa ~ lcavol + lweight + svi + age + lcp + pgg45, data=prostate)
+lm6_sum <- summary(lm6, cor=TRUE)
+
+lm7 <- lm(lpsa ~ lcavol + lweight + svi + age + lcp + pgg45 + gleason, data=prostate)
+lm7_sum <- summary(lm7, cor=TRUE)
+
+lm_tibble <- tibble(
+       model = c(1, 2, 3, 4, 5, 6, 7), 
+       se_residual = c(sd(lm1$residuals), sd(lm2$residuals), sd(lm3$residuals), sd(lm4$residuals), 
+                       sd(lm5$residuals), sd(lm6$residuals), sd(lm7$residuals)), 
+       r_sq = c(lm1_sum$`r.squared`, lm2_sum$`r.squared`, lm3_sum$`r.squared`,                 
+                 lm4_sum$`r.squared`, lm5_sum$`r.squared`, lm6_sum$`r.squared`,  
+                 lm7_sum$`r.squared`))
+
+lm_tibble_long <- pivot_longer(lm_tibble, cols= c(se_residual, r_sq), names_to= "Name", values_to = "Value")
+
+ggplot(data=lm_tibble_long, aes(x=model, y=Value, group=Name, fill=Name)) + geom_line(aes(col=Name), size=1.5) + scale_color_manual(values=c("#D55E00", "#009E73")) + xlab("Model No.") + ylab("Value")
+
+```
+
+
+### Plot the relationship between `lpsa` and `lcavol`
+
+
+```{r, message=FALSE, warning=FALSE}
+
+
+lm1.5 <- lm(lcavol ~ lpsa, data=prostate)
+
+plot(lpsa ~ lcavol, data=prostate)
+abline(lm1)
+abline(lm1.5)
+
+```
+

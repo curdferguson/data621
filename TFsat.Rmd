@@ -1,0 +1,182 @@
+---
+title: "SAT study"
+author: "Tyler Frankenberg"
+date: "02/27/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Import packages 
+
+```{r, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+
+```
+
+
+
+## Import data
+
+
+
+```{r, message=FALSE, warning=FALSE}
+
+url <- "https://raw.githubusercontent.com/curdferguson/data621/main/datasets/sat.txt"
+
+sat <- read_tsv(url, skip = 1, col_names = c("state", "expend", "ratio", "salary", "takers", "verbal", "math", "total"), show_col_types=FALSE)
+
+sat <- column_to_rownames(sat, var="state")
+
+```
+
+
+
+## Glimpse dataset structure and each column's summary statistics
+
+
+```{r, message=FALSE, warning=FALSE}
+
+sat %>% head(5)
+sat[,1:4] %>% summary()
+cat("\n")
+sat[,5:7] %>% summary()
+                        
+```
+
+
+## ANOVA
+
+We construct a linear model with `expend`, `ratio`, and `salary` as predictors of the response variable `total`.
+
+Is the effect of these predictors on the response statistically significant?  We use an F-test for Analysis of Variance to test whether any of the predictors' coefficients is statistically different from zero.
+
+Our F-statistic of 4.0662 is sufficiently greater than that of the null model, and our p-value of 0.01209 indicates this result would be the result of chance in only 0.12% of hypothetical samples.
+
+We reject the null hypothesis that the coefficients of our predictors are statistically equivalent to zero, and take the effect of this model on the response as statistically significant at the 0.95 level.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+sat_lm1 <- lm(total ~ expend + ratio + salary, data=sat)
+lm1_sum <- summary(sat_lm1)
+lm1_sum
+
+sat_nullmod <- lm(total ~ 1, data=sat)
+
+lm1_anova <- anova(sat_nullmod, sat_lm1)
+lm1_anova
+                        
+```
+
+
+## Examine the effect of a new variable using ANOVA and T-test
+
+We add the predictor `takers` to the model.
+
+Is the additon of this predictor on the response statistically significant?  We can test this in two ways; using a t-test for the specific variable and using an F-test to compare the effect of the first and second models as a whole.  Then we can show that the results of these two methods are actually the same.
+
+
+#### T-test
+
+first, we can output the regresion summary of the new model and observe the value of the t-statistic and p-value for `takers`.  
+
+Our regression summary output gives a t-value of -12.559 and a p-value of 2.61e-16 for `takers`.  This indicates the coefficient is about 12.5 times the size of its standard error, and that we'd expect this to be the result of chance in well fewer than 0.01% of hypothetical samples.
+
+We conclude by this result that we can reject the null hypothesis at the 0.95% level of statistical significance, and assume the impact of `takers` to be significant.
+
+
+#### ANOVA
+
+Second, we can use an F-test for Analysis of Variance between the new model and previous model to test whether the additional impact of the coefficient for `takers` is statistically different from zero.
+
+Our F-statistic of 157.74 is sufficiently greater than that of the model without `takers`, and our p-value of 2.607e-16 indicates this result would be the result of chance in well fewer than 0.01% of hypothetical samples.
+
+We reject the null hypothesis that the difference in the coefficients of our predictors is statistically equivalent to zero, and take the effect of this model on the response as statistically significant at the 0.95 level.
+
+
+#### Verify equivalence
+
+Finally, we can verify that our results from these two tests are the same.  We expect that our ANOVA F statistic should be approximately the square of our t-value for the added variable `takers`, and that their p-values would be equal.  
+
+As we see in our output below, the difference between the t-value squared and the F-statistic, as well as between the p-values, are each so small as to be functionally equivalent to zero. 
+
+
+```{r, message=FALSE, warning=FALSE}
+
+# method 1 - regression summary output t-test
+sat_lm2 <- lm(total ~ expend + ratio + salary + takers, data=sat)
+lm2_sum <- summary(sat_lm2)
+lm2_sum
+
+# method 2 - ANOVAb
+lm2_anova <- anova(sat_lm1, sat_lm2)
+lm2_anova
+
+# verification
+(lm2_sum$coefficients["takers", "t value"])^2 - lm2_anova$`F`
+(lm2_sum$coefficients["takers", "Pr(>|t|)"]) - lm2_anova$`Pr(>F)`
+
+```
+
+
+## Regression Model Diagnostics
+
+#### Constant Variance & Linearity of Relationship
+
+We conduct diagnostics of our model `sat_lm2`.  First, we'll check the Constant Variance assumption by plotting the residuals versus the fitted y-values.  
+
+While the range over which the residuals vary is about equal on the left and right hand sides, the distribution of points in the middle is skewed to the negative side of the range.  The smoothed curve suggest adding a quadratic term to the model may be an appropriate transformation.
+
+There are also 3 outliers noted on the plot - the values for North Dakota, New Hampshire, and West Virginia need to be reviewed for validity and may factor in additional transformations to the model.
+
+Viewing the Scale-Location plot backs up our understanding of the model - the residuals have a constant spread but we have a problem in the shape of the model and thus the linearity of the relationship between predictors and response.  We also see Utah surface as another outlier.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+plot(sat_lm2, 1)
+plot(sat_lm2, 3)
+
+#ggplot(sat_lm2, aes(x=fitted(sat_lm2), y=residuals(sat_lm2))) + geom_jitter() + geom_hline(yintercept=0, color="blue") + xlab("Fitted") + ylab("Residuals")
+
+```
+
+
+#### Normality of Residuals
+
+Next, we'll check for the normality of our distributed residuals.  Using a quantile - quantile plot and a histogram of residuals, we can see that the shape of the distribution is approximately normal with some slight deviation from normality at the tails, accounted for by our known outliers plus another identified in the plot - Utah.
+
+Notably, our data point for West Virginia seems to skew the distribution of residuals slightly leftward in the histogram visualization.  It's time we take a look at the influence of each of these outliers on the model as a whole.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+plot(sat_lm2, 2)
+
+ggplot(data=sat_lm2, aes(x=residuals(sat_lm2))) + geom_histogram(bins=15) + xlab("Residual") + ylab("Frequency")
+
+```
+
+
+#### Assessing leverage
+
+Looking at the residuals vs. leverage plot below, we see that for the most part, our data including the points of high leverage cluster within the area between -2 and 2 standardized residuals.
+
+The point of most concern is Utah, which exerts the most influence over the dataset and falls just within the acceptable range of Cook's Distance (0.5).  This is not enough of an anomaly to impact our assumptions of the model's validity.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+plot(sat_lm2, 5)
+
+#ggplot(data=sat_lm2, aes(x=residuals(sat_lm2))) + geom_histogram(bins=15) + xlab("Residual") + ylab("Frequency")
+
+```
+

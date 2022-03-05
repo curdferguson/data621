@@ -1,0 +1,66 @@
+---
+title: "Divorce study"
+author: "Tyler Frankenberg"
+date: "1/30/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Import packages 
+
+
+```{r, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+
+```
+
+
+
+## Import data
+
+
+```{r, message=FALSE, warning=FALSE}
+
+url <- "https://raw.githubusercontent.com/curdferguson/data621/main/datasets/divusa.txt"
+
+divusa <- read_tsv(url, skip = 1, col_names = c("index", "year", "divorce", "unemployed", "femlab", "marriage", "birth", "military"), show_col_types=FALSE)
+
+divusa <- divusa[,2:8]
+
+```
+
+
+
+## Glimpse dataset structure and each column's summary statistics
+
+
+```{r, message=FALSE, warning=FALSE}
+
+divusa %>% head(5)
+divusa %>% summary()
+                        
+```
+
+
+## View change in each column over time
+
+```{r, message=FALSE, warning=FALSE}
+
+divusa_numeric_long <- divusa %>% select(!birth) %>% pivot_longer(colnames(select(divusa, !c(year, birth)))) %>% as.data.frame()
+
+ggplot(data=divusa_numeric_long, aes(x=year, y=value, group=name, fill=name)) + geom_line(aes(col=name))
+                        
+```
+
+## View histograms of each column
+
+```{r, message=FALSE, warning=FALSE}
+
+divusa %>% pairs()
+                        
+```
