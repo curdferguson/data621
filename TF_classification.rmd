@@ -1,0 +1,171 @@
+---
+title: "Classification"
+author: "Tyler Frankenberg"
+date: "3/20/2022"
+output: html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import packages
+
+```{r message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(pROC)
+library(caret)
+
+```
+
+## Import and examine data
+
+
+```{r, message=FALSE, warning=FALSE}
+
+url <- "https://raw.githubusercontent.com/curdferguson/data621/main/datasets/classification-output-data.csv"
+
+class_raw <- read_csv(url, col_names = TRUE)
+
+head(class_raw)
+summary(class_raw)
+
+```
+
+## Contingency Function
+
+
+
+```{r, message=FALSE, warning=FALSE}
+
+contingency <- function(df) {
+    df1 <- data_frame(df)
+    colnames(df1) <- c("class", "scored.class", "scored.prob")
+    
+    ct <- with(df1, table(df1$class, df1$scored.class, dnn= c("class", "scored.class")))
+    
+    cat("Contingency Table:", "\n")
+    cat("\n")
+    print(ct)
+    
+    tp <- ct[2, 2]
+    tn <- ct[1, 1]
+    fp <- ct[1, 2]
+    fn <- ct[2, 1]
+    total <- sum(ct)
+    
+    acc <- (tp + tn) / total
+    err <- (fp + fn) / total
+    
+
+    cat("\n")
+    cat("Accuracy:  ", acc, "\n")
+    cat("Classification Error Rate: ", err, "\n")
+    
+    if (acc + err != 1) {
+      cat("\n")
+      cat("...")
+      cat("ERROR: Accuracy and Error do not sum to 1")
+      break
+    } else {
+      
+      prec <- tp / (tp + fp)
+      sens <- tp / (tp + fn)
+      spec <- tn / (tn + fp)
+      f1 <- (2 * prec * sens) / (prec + sens)
+
+      cat("...", "\n")
+      cat("Precision:   ", prec, "\n")
+      cat("Sensitivity: ", sens, "\n")
+      cat("Specificity: ", spec, "\n")
+      cat("F1 Score:    ", f1, "\n")
+    } 
+}
+
+class_df <- data_frame(as_factor(class_raw$class), 
+                       as_factor(class_raw$scored.class),
+                  class_raw$scored.probability)
+
+colnames(class_df) <- c("class", "scored.class", "scored.prob")
+
+contingency(class_df)
+
+
+```
+
+
+```{r}
+
+confusionMatrix(class_df$scored.class, reference=class_df$class)
+
+
+```
+
+
+## ROC Curve Function
+
+```{r}
+
+df2 <- data_frame(class_df)
+colnames(df2) <- c("class", "scored.class", "scored.prob")
+
+scored.class_list <- lapply(seq(0.03, 0.94, 0.01), function(i) {
+  i = if_else(df2$scored.prob >= i, 1, 0) })
+
+ct_list <- lapply(scored.class_list, function(j) {
+  table(df2$class, j, dnn= c("class", paste0("scored.class_")))
+})
+
+tp_list <- lapply(seq(1, 92, 1), function(k) {
+  ct_list[[k]][4]
+})
+
+tn_list <- lapply(seq(1, 92, 1), function(k) {
+  ct_list[[k]][1]
+})
+
+fp_list <- lapply(seq(1, 92, 1), function(k) {
+  ct_list[[k]][3]
+})
+
+fn_list <- lapply(seq(1, 92, 1), function(k) {
+  ct_list[[k]][2]
+})
+
+plot_vals <- data_frame(index = seq(3, 94, 1),
+                        threshold = seq(0.03, 0.94, 0.01),
+                        tp = unlist(tp_list),
+                        tn = unlist(tn_list),
+                        fp = unlist(fp_list),
+                        fn = unlist(fn_list),
+                        sens = tp / (tp + fn),
+                        spec = tn / (tn + fp),
+                        `1-spec` = 1 - spec)
+              
+
+    
+roc_plot <- ggplot(plot_vals, aes(x=plot_vals$`1-spec`, y=plot_vals$sens)) + 
+        geom_point(col="red", size = 1) + 
+        scale_x_continuous(limits=c(0.0, 1.0), breaks=c(0, 0.20, 0.40, 0.60, 0.80, 1)) + 
+        scale_y_continuous(limits=c(0.0, 1.0), breaks=c(0, 0,20, 0,40, 0.60, 0.80, 1)) +
+        geom_abline(slope = 1, intercept = 0, col="gray", size=1, linetype="dashed") 
+
+roc_plot
+
+```
+
+
+
+```{r}
+
+rocCurve <- roc(class_df, response= class,
+                predictor= scored.prob, levels = rev(levels(class_df$class)))
+
+auc(rocCurve)
+plot.roc(rocCurve)
+
+```
+
+

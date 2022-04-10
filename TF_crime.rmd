@@ -1,0 +1,56 @@
+---
+title: "TF_crime"
+author: "Tyler Frankenberg"
+date: "4/10/2022"
+output: html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import packages
+
+```{r message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(pROC)
+library(caret)
+
+```
+
+## Import and examine data
+
+
+```{r, message=FALSE, warning=FALSE}
+
+url <- ""
+
+crime_raw <- read_csv(url, col_names = TRUE)
+
+head(crime_raw)
+summary(crime_raw)
+
+```
+
+```{r}
+
+confusionMatrix(class_df$scored.class, reference=class_df$class)
+
+
+```
+
+
+
+```{r}
+
+rocCurve <- roc(class_df, response= class,
+                predictor= scored.prob, levels = rev(levels(class_df$class)))
+
+auc(rocCurve)
+plot.roc(rocCurve)
+
+```
+
+

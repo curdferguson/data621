@@ -1,0 +1,564 @@
+---
+title: "TF Moneyball"
+author: "Tyler Frankenberg"
+date: "03/06/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Import packages 
+
+```{r, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(ggcorrplot)
+library(rms)
+
+```
+
+
+
+## Import data & Glimpse its Structure
+
+
+We'll start by viewing the Moneyball dataset's structure and the summary statistics for each of its columns.  We can see there are 16 columns of numeric data.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+url <- "https://raw.githubusercontent.com/curdferguson/data621/main/datasets/moneyball-training-data.csv"
+moneyball_raw <- url %>% read_csv(na='') %>% column_to_rownames(var="INDEX")
+
+moneyball_raw %>% head(5)
+moneyball_raw %>% summary()
+
+```
+
+
+
+## Data Cleaning
+
+Our initial summary reveals a few immediate concerns:
+
+
+#### Investigate Zero-win Record Season
+
+There are implausible minimum values of `0` for several columns, including TARGET_WINS.  According to Wikipedia, the worst professional baseball season on record was achieved by 1875 Brooklyn Atlantics, of the short-lived "National Association".  Even the lowly Atlantics were able to scrape together two wins that year.  Filtering reveals these zero minimums to come from a single row, which has several `NA` values as well, so appears to be incomplete or erroneous.  We can safely remove this row from the data.   
+
+```{r, message=FALSE, warning=FALSE}
+
+moneyball_raw0 <- moneyball_raw[moneyball_raw$TARGET_WINS > 0, ]
+
+```
+
+
+#### Handle NA Values
+
+There are a high number of of `NA` values in the columns TEAM_BATTING_SO, TEAM_BASERUN_SB, TEAM_BASERUN_CS, TEAM_BATTING_HBP, TEAM_PITCHING_SO, and TEAM_FIELDING_DP.  There is only one clear-cut case here, which is for the column TEAM_BATTING_HBP, which includes `772` NA values.  This will limit any linear model it is a part of, so we'll start by dropping this column from the dataset.
+
+Next, we'll examine how many rows contain more than one `NA` value.  Since they are relatively few, but still number in the hundreds of rows, we will drop those rows from the dataset, rather than try to impute missing data.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+moneyball_raw1 <- moneyball_raw0 %>% select(!c("TEAM_BATTING_HBP"))
+
+NArows <- data.frame(`NAvals>=4` = nrow(moneyball_raw1[rowSums(is.na(moneyball_raw1)) >= 4, ]),
+           `NAvals==3` = nrow(moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 3, ]),
+           `NAvals==2` = nrow(moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 2, ]),
+           `NAvals==1` = nrow(moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 1, ]),
+           `NAvals==0` = nrow(moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 0, ]))
+
+NArows
+
+#source: https://statisticsglobe.com/r-remove-data-frame-rows-with-some-or-all-na#:~:text=The%20output%20is%20the%20same%20as%20in%20the,you%20can%20replace%20%E2%80%9C%3D%3D%200%E2%80%9D%20by%20%E2%80%9C%3E%3D%202%E2%80%9D.
+
+```
+
+
+Next, we'll take a quick look at the rows with one `NA` value.  These fall either in the column TEAM_BASERUN_CS, or in TEAM_FIELDING_DP.  TEAM_BASERUN_CS is an interesting data point, because when added to TEAM_BASERUN_SB, it quantifies how often teams are willing to risk an out in order to advance a runner on the base path.  This is often mentioned as the type of "old school" baseball behavior that today's more conservative, analytically-minded organizations discourage.  Thus, it may help generate an important proxy for 'aggressiveness' in a team's offensive play.  Given the information we therefore can glean from this field, we'll keep the column though it contains hundreds of `NA` values, and drop the `NA` rows.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 1, ]
+
+```
+
+This leaves just 18 NAs on the column TEAM_FIELDING_DP.  This is certainly a low enough number of rows to consider imputation of a mean value; however, further investigation into this subset reveals additional concerns; namely, absurdly high values for TEAM_PITCHING_H (max = `30132`) and TEAM_PITCHING_SO (max = `192781`).  
+
+According to Baseball Almanac, the Major League record for most strikeouts in a season by a pitching staff is `1687` by the 2018 Houston Astros. Since our data goes all the way back to the earliest days of the sport in 1871, it likely includes team totals for clubs and leagues outside the modern definition of "Major" such as semi-professional teams, or "barnstorming" teams who dominated poorly-matched local competition as they toured the country.  
+
+Whether these values actually represent a herculean effort out of baseball's mythic age, or are simply erroneous, they are so outside the realm of plausibility for a modern-day team that we can consider them invalid and delete the rows.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+moneyball_raw2 <- moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 0, ]
+
+```
+
+
+
+## Transform Columns into Meaningful Measures
+
+
+Now that we have cleaned our raw data, we must consider the relevance of each column to a team's success, and therefore its conceptual appropriateness in a predictive model.  In other words, rather than taking each column at face value, we need to consider how it the underlying activity impacts the game of baseball, both on its own and in combination with the other measures.  We come up with the following for our test dataset, which we'll explain in more detail below.
+
+```{r, message=FALSE, warning=FALSE}
+
+moneyball_test <- moneyball_raw2 %>% summarise(
+    TARGET_WINS = TARGET_WINS,
+    TEAM_BATTING_TB = ((TEAM_BATTING_H - TEAM_BATTING_2B - TEAM_BATTING_3B - TEAM_BATTING_HR) + 2*TEAM_BATTING_2B + 3*TEAM_BATTING_3B + 4*TEAM_BATTING_HR),
+    TEAM_BATTING_BB = TEAM_BATTING_BB,
+    TEAM_BATTING_SO = TEAM_BATTING_SO,
+    TEAM_BASERUN_ATT = TEAM_BASERUN_SB + TEAM_BASERUN_CS,
+    TEAM_BASERUN_PCT = TEAM_BASERUN_SB / TEAM_BASERUN_ATT,
+    TEAM_FIELDING_E = TEAM_FIELDING_E,
+    TEAM_FIELDING_DP = TEAM_FIELDING_DP,
+    TEAM_PITCHING_BB = TEAM_PITCHING_BB,
+    TEAM_PITCHING_H = TEAM_PITCHING_H - TEAM_PITCHING_HR,
+    TEAM_PITCHING_HR = TEAM_PITCHING_HR,
+    TEAM_PITCHING_SO = TEAM_PITCHING_SO
+)
+
+summary(moneyball_test)
+
+
+```
+
+
+
+#### Batting Measures
+
+Since TEAM_BATTING_H is by its nature inclusive of the data in the 2B, 3B, and HR columns, we need to subtract their values from it so that it is only measuring single-base hits.  But we should also consider the fact that 2B, 3B, and HR are worth more in terms of progress toward runs scored - runs are of course the currency with which wins are acquired - and weight them appropriately.
+
+We can conveniently achieve these ends while making the model more concise by combining all of these columns together into the measure TEAM_BATTING_TB ("Total Bases"), a real-life baseball statistic which simply counts the number of bases achieved through hits in fair territory.
+
+TEAM_BATTING_BB and TEAM_BATTING_SO are somewhat more straightforward as measures in their own right, and both are relevant to the outcome of the game (though they may well be negatively correlated, as 'plate discipline', or the batter's ability to refrain from swinging at pitches thrown outside the "strike zone", should both increase his number of walks and reduce his number of strikeouts).
+
+
+Scatter plots vs. TARGET_WINS show clear positive linear associations for Total Bases and Walks, while Strikeouts seem to have a less impactful relationship.
+
+```{r, message=FALSE, warning=FALSE}
+
+batting_plots <- lapply(colnames(moneyball_test[, 2:4]), function(c) {
+  ggplot(moneyball_test, aes(moneyball_test[, c], TARGET_WINS)) + geom_jitter(color="gray", alpha=0.85) + geom_smooth(method = "lm") + xlab(c)
+ })
+
+batting_plots
+
+```
+
+#### Base Running Measures
+
+As we discussed above, we'll add TEAM_BASERUN_SB and TEAM_BASERUN_CS together to get TEAM_BASERUN_ATT ("Attempts").  This is a number we might expect to be higher for older teams and lower for modern-day teams, as contemporary analytics on which baseball strategy is now often based have come to frown upon the risk involved in base stealing.  But over the long term it should be a good proxy for "aggressive" (high TEAM_BASERUN_ATT) versus "conservative" (low TEAM_BASERUN_ATT) offensive play.  For good measure, we'll compute the percentage of attempts that resulted in successful steals as TEAM_BASERUN_PCT.
+
+There is an apparent positive linear association between both baserunning measures and TARGET_WINS.
+
+```{r, message=FALSE, warning=FALSE}
+
+baserun_plots <- lapply(colnames(moneyball_test[, 5:6]), function(c) {
+  ggplot(moneyball_test, aes(moneyball_test[, c], TARGET_WINS)) + geom_jitter(color="gray", alpha=0.85) + geom_smooth(method = "lm") + xlab(c)
+ })
+
+baserun_plots
+
+```
+
+
+#### Fielding Measures
+
+Team fielding statistics, in combination with pitching, give a picture of the team's defensive play.  We should be on the lookout for correlation with pitching measures, as for example, some pitchers strategically throw pitches that by their speed and movement are less likely to result in strikeouts and more likely to be hit softly and result in double plays.
+
+Fewer team errors are likely to result in more wins (as we might expect); however, the impact of double plays remains unclear from our initial "eyeball test".
+
+```{r, message=FALSE, warning=FALSE}
+
+fielding_plots <- lapply(colnames(moneyball_test[, 7:8]), function(c) {
+  ggplot(moneyball_test, aes(moneyball_test[, c], TARGET_WINS)) + geom_jitter(color="gray", alpha=0.85) + geom_smooth(method = "lm") + xlab(c)
+ }) 
+
+fielding_plots
+
+```
+
+#### Pitching Measures
+
+The team pitching statistics require no obvious transformations; however, their impact on target wins as evidenced in this dataset is curious.  We would expect pitching BB, H, and HR to have a negative association with TARGET_WINS and SO to have a positive association, and yet...
+
+While we can't weigh in definitively on the cause for our relationships being the way they are, further investigation might explore whether the rates of pitching statistics have fluctuated over the course of time and whether they associate positively or negatively with the level of parity in the league over those same periods.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+pitching_plots <- lapply(colnames(moneyball_test[, 9:12]), function(c) {
+  ggplot(moneyball_test, aes(moneyball_test[, c], TARGET_WINS)) + geom_jitter(color="gray", alpha=0.85) + geom_smooth(method = "lm") + xlab(c)
+ }) 
+
+pitching_plots
+
+```
+
+#### Correlation among variables
+
+As we noted previously, correlation among variables - and thus the potential for multicolinearity in any given linear model derived from the data - is of some concern.  A lower-half correlation matrix reveals this is indeed the case.  These are, after all, team statistics contributing toward wins in a team sport, and we expect some reasonable amount of relatedness amongst the individual performances on offense and defense.
+
+A few fields that stand out here:
+
+- TEAM_BATTING_BB and TEAM_PITCHING_BB, and TEAM_BATTING_SO and TEAM_PITCHING_SO are strongly correlated with one another.  This is curious, as the batting and pitching performances are, at face value, about as independent of one another as it gets in team sports.  Without a plausible explanation for the correlation, we'll proceed by adding interaction terms for each relationship to our linear model.
+
+- TEAM_FIELDING_E is negatively correlated with many of the variables in the dataset.  At first glance this might seem plausible, as we'd expect a high number of fielding errors to indicate a team that generally lacked discipline or was having a "down year".  However, it's notable that the columns with the highest degree of negative correlation are team batting strikeouts and team pitching strikeouts.
+
+- TEAM_BATTING_TB and TEAM_PITCHING_HR - the high degree of positive correlation in these measures may be due to the impact of confounding variables outside this dataset.  For example, homeruns and power hitting in general were notoriously rare during the "dead ball era" of the late 1800s and early 1900s when baseballs were constructed of less aerodynamic material and outfield fences ranged well over 400 yards, and have achieved record highs over the last 3 decades due variously to the use of performance enhancing drugs by hitters, the short distance of home run fences in modern baseball stadiums, and the adaptation of new hitting styles through the use of advancd motion-capture analytics.
+
+
+
+```{r, message=FALSE, warning=FALSE}
+
+corr <- cor(moneyball_test[, 2:12])
+p.mat <- cor_pmat(moneyball_test[, 2:12])
+
+ggcorrplot(corr, p.mat = p.mat, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+                                             
+#http://sthda.com/english/wiki/ggcorrplot-visualization-of-a-correlation-matrix-using-ggplot2#:~:text=ggcorrplot%20main%20features%20It%20provides%20a%20solution%20for,function%20for%20computing%20a%20matrix%20of%20correlation%20p-values.
+
+```
+
+
+## Create and Test a Linear Model
+
+We'll start by testing a linear model with our 11 relevant statistics plus our two interaction terms.  Based on the output of our `lm` and `summary` functions, we appear to be off to a promising start:
+
+- we have an adjusted $R^2$ value of `0.3908` and an F-statistic that is statistically significant at the 99% level.
+
+- we have a number of coefficients that are statistically significant at the 95% level, though most have a relatively small t-value.
+
+- the distribution of residuals appears approximately normal, with a median about =0.133, and our diagnostic plots give us no concerns regarding outliers with high leverage or non-linear relationships.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+lm1 <- lm(TARGET_WINS ~ TEAM_BATTING_TB + TEAM_BATTING_BB + TEAM_BATTING_SO + TEAM_BASERUN_ATT + TEAM_BASERUN_PCT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_BB + TEAM_PITCHING_H + TEAM_PITCHING_HR +
+            TEAM_PITCHING_SO + 
+            TEAM_BATTING_SO*TEAM_PITCHING_SO + TEAM_BATTING_BB*TEAM_PITCHING_BB, 
+          data=moneyball_test)
+
+lm1_sum <- summary(lm1)
+lm1_sum
+
+plot(lm1)
+                        
+```
+
+## Backward Stepwise Elimination
+
+We'll now iterate through a series of models in which we will eliminate the statistically insignificant coefficient with the lowest t-value.  We'll pause when we have achieved a model with only statistically significant coefficients.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+#Eliminate TEAM_BATTING_TB
+
+lm2 <- lm(TARGET_WINS ~ TEAM_BATTING_BB + TEAM_BATTING_SO + 
+            TEAM_BASERUN_ATT + TEAM_BASERUN_PCT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_BB + TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO + 
+            TEAM_BATTING_SO*TEAM_PITCHING_SO + TEAM_BATTING_BB*TEAM_PITCHING_BB, 
+          data=moneyball_test)
+
+lm2_sum <- summary(lm2, cor=TRUE)
+
+
+#Eliminate TEAM_BASERUN_PCT
+
+lm3 <- lm(TARGET_WINS ~ TEAM_BATTING_BB + TEAM_BATTING_SO + 
+            TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_BB + TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO + 
+            TEAM_BATTING_SO*TEAM_PITCHING_SO + TEAM_BATTING_BB*TEAM_PITCHING_BB, 
+          data=moneyball_test)
+
+lm3_sum <- summary(lm3, cor=TRUE)
+
+
+# Eliminate TEAM_BATTING_SO and SO interaction term
+
+lm4 <- lm(TARGET_WINS ~ TEAM_BATTING_BB + 
+            TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_BB + TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO + 
+            TEAM_BATTING_BB*TEAM_PITCHING_BB, 
+          data=moneyball_test)
+
+lm4_sum <- summary(lm4, cor=TRUE)
+
+# Eliminate TEAM_BATTING_BB*TEAM_PITCHING_BB interaction term
+
+lm5 <- lm(TARGET_WINS ~ TEAM_BATTING_BB + 
+            TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_BB + TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO, 
+          data=moneyball_test)
+
+lm5_sum <- summary(lm5, cor=TRUE)
+                        
+```
+
+
+#### Review Viable Model
+
+The first model with only statistically significant coefficients is our 6th... model `lm6`.
+
+- The adjusted $R^2$ is still high for this model, at `0.3837`. 
+- The Residuals are normally distributed about a median at `0.006`; the absolute values of Min and Max residuals are nearly equal, as are the 1Q and 3Q values.
+- Nothing in the residual-fitted or scale-location plots indicates a nonlinear or heteroscedastic distribution of residuals, and the outliers in our dataset do not exert unwelcome leverage.
+
+
+As regards the coefficients themselves, there are no surprises here that we haven't already commented on in the analysis of scatter plots above; it is interesting, however, that TEAM_FIELDING_E and TEAM_FIELDING_DP show the greatest impact on the data.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+# Eliminate TEAM_PITCHING_BB
+
+lm6 <- lm(TARGET_WINS ~ TEAM_BATTING_BB + 
+            TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO, 
+          data=moneyball_test)
+
+lm6_sum <- summary(lm6, cor=TRUE)
+summary(lm6)
+
+plot(lm6)
+                        
+```
+
+#### Addressing Multicolinearity
+
+What of the potential for multicolinearity we discussed above?  Displaying a correlation matrix for the coefficients in the data, we see we have one statistically-significant negative correlation between TEAM_PITCHING_SO and TEAM_PITCHING_HR.
+
+Intuitively this isn't outside the realm of plausibility, though we'll still do our due diligence and investigate further by calculating the variance inflation factor of each item in the model.  This shows the extent to which the model variance is inflated due to the colinearity of two variables.  In this case, our VIF output shows values of less than `2.5`, well below the threshold of `4` at which we'd want to adjust the model.
+
+Therefore, we can assume that the interaction of TEAM_PITCHING_SO and TEAM_PITCHING_HR is not impactul enough to warrant further adjustment to the model.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+
+# correlation matrix
+
+corr6 <- cor(lm6_sum$correlation)[2:8, 2:8]
+p.mat6 <- cor_pmat(lm6_sum$correlation)[2:8, 2:8]
+
+ggcorr6 <- ggcorrplot(corr6, p.mat= p.mat6, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+
+ggcorr6
+
+
+# Variance Inflation Factor
+v6 <- vif(lm6)
+v6
+
+```
+
+
+
+
+```{r, message=FALSE, warning=FALSE}
+
+lm7a <- lm(TARGET_WINS ~ TEAM_BATTING_BB + TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO + 
+            TEAM_PITCHING_HR*TEAM_PITCHING_SO,
+          data=moneyball_test)
+
+lm7a_sum <- summary(lm7a, cor=TRUE)
+lm7a_sum
+
+corr7a <- cor(lm7a_sum$correlation)[2:9, 2:9]
+p.mat7a <- cor_pmat(lm7a_sum$correlation)[2:9, 2:9]
+
+ggcorr7a <- ggcorrplot(corr7a, p.mat= p.mat7a, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+
+ggcorr7a
+
+v7a <- vif(lm7a)
+v7a                 
+```
+
+```{r, message=FALSE, warning=FALSE}
+
+lm7b <- lm(TARGET_WINS ~ TEAM_BATTING_BB + TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + TEAM_PITCHING_H + TEAM_PITCHING_SO,
+          data=moneyball_test)
+
+lm7b_sum <- summary(lm7b, cor=TRUE)
+lm7b_sum
+
+corr7b <- cor(lm7b_sum$correlation)[2:7, 2:7]
+p.mat7b <- cor_pmat(lm7b_sum$correlation)[2:7, 2:7]
+
+ggcorr7b <- ggcorrplot(corr7b, p.mat= p.mat7b, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+
+ggcorr7b
+
+v7b <- vif(lm7b)
+v7b                        
+```
+
+```{r, message=FALSE, warning=FALSE}
+
+lm7c <- lm(TARGET_WINS ~ TEAM_BATTING_BB + TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + TEAM_PITCHING_H + TEAM_PITCHING_HR,
+          data=moneyball_test)
+
+lm7c_sum <- summary(lm7c, cor=TRUE)
+lm7c_sum
+
+corr7c <- cor(lm7c_sum$correlation)[2:7, 2:7]
+p.mat7c <- cor_pmat(lm7c_sum$correlation)[2:7, 2:7]
+
+ggcorr7c <- ggcorrplot(corr7c, p.mat= p.mat7c, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+
+ggcorr7c
+
+v7c <- vif(lm7c)
+v7c
+
+
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+
+lm7d <- lm(TARGET_WINS ~ TEAM_BATTING_BB + TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + TEAM_PITCHING_H,
+          data=moneyball_test)
+
+lm7d_sum <- summary(lm7d, cor=TRUE)
+lm7d_sum
+
+corr7d <- cor(lm7d_sum$correlation)[2:6, 2:6]
+p.mat7d <- cor_pmat(lm7d_sum$correlation)[2:6, 2:6]
+
+ggcorr7d <- ggcorrplot(corr7d, p.mat= p.mat7d, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+
+ggcorr7d
+
+v7d <- vif(lm7d)
+v7d
+
+```
+
+
+#### Summary
+
+```{r}
+
+lm_tibble <- tibble(
+       model = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
+       label = c("lm1", "lm2", "lm3", "lm4", "lm5", "lm6", "lm7", "lm7a", "lm7b", "lm7c", "lm7d"),
+       `RSE` = c(sd(lm1$residuals), sd(lm2$residuals), sd(lm3$residuals), 
+                       sd(lm4$residuals), sd(lm5$residuals), sd(lm6$residuals), 
+                       sd(lm7$residuals), sd(lm7a$residuals), 
+                       sd(lm7b$residuals), sd(lm7c$residuals), 
+                       sd(lm7d$residuals)),  
+       `adjR^2` = c(lm1_sum$`adj.r.squared`, lm2_sum$`adj.r.squared`,lm3_sum$`adj.r.squared`,
+                lm4_sum$`adj.r.squared`, lm5_sum$`adj.r.squared`, lm6_sum$`adj.r.squared`,  
+                lm7_sum$`adj.r.squared`, lm7a_sum$`adj.r.squared`, 
+                lm7b_sum$`adj.r.squared`, lm7c_sum$`adj.r.squared`, lm7d_sum$`adj.r.squared`),
+       maxVIF = c(0, 0, 0, 0, 0, max(v6), max(v7), max(v7a), max(v7b), max(v7c), max(v7d)),
+       shapes=case_when((model >= 6 & maxVIF >= 5.0) ~ 19, 
+                                 (model >= 6 & maxVIF < 5.0) ~ 21,
+                                 (model <= 5) ~ 4)))
+       
+       
+
+lm_tibble_long <- pivot_longer(lm_tibble, cols= c(RSE, `adjR^2`), names_to= "Name", values_to = "Value")
+
+lm_tibble_long$Name <- factor(lm_tibble_long$Name, levels=sort(unique(lm_tibble_long$Name), decreasing = TRUE))
+
+ggplot(data=lm_tibble_long, aes(x=label, y=Value, group=Name)) +
+  geom_line(aes(col=Name), size=1.5, ) + scale_color_manual(values=c("#D55E00", "#009E73")) +
+  geom_point(aes(shape=case_when((model >= 6 & maxVIF >= 5.0) ~ 19, 
+                                 (model >= 6 & maxVIF < 5.0) ~ 21,
+                                 (model <= 5) ~ 4)), size=5, fill="white") + 
+  scale_shape_identity() +
+  #geom_text(aes(label=ifelse(shapes==21, paste0(Name, " = ", round(Value, 4)), "")), 
+           #nudge_x = 1.25) +
+  #geom_text(aes(label=ifelse(lm_tibble_long$shape==21, paste0(Name, " = ", round(Value, 4)), "")), 
+   #         nudge_x = 1.25) +
+  facet_wrap(facets = ~ Name, scales = "free_y", dir="v", strip.position = c("left")) +
+  xlab("") + ylab("") + theme(legend.position="") + labs(title = "Model Selection", subtitle = "TARGET WINS ~ SELECTED BAT, BR, PITCH, FIELD STATISTICS")
+  
+
+```
+
+
+
+vignette("ggplot2-specs")
+
+
+
+## Regression Model Diagnostics
+
+#### Constant Variance & Linearity of Relationship
+
+
+```{r, message=FALSE, warning=FALSE}
+
+plot(lm7a, 1)
+plot(lm7a, 3)
+plot(lm7a, 2)
+
+ggplot(data=lm7a, aes(x=residuals(lm7a))) + geom_histogram(bins=30) + xlab("Residual") + ylab("Frequency")
+
+plot(lm7a, 5)
+
+
+
+```
+
+
+
+
+
+
+#### Normality of Residuals
+
+
+```{r, message=FALSE, warning=FALSE}
+
+plot(lm7a, 2)
+
+ggplot(data=lm7a, aes(x=residuals(lm7a))) + geom_histogram(bins=30) + xlab("Residual") + ylab("Frequency")
+
+```
+
+
+#### Assessing leverage
+
+
+```{r, message=FALSE, warning=FALSE}
+
+plot(lm7a, 5)
+
+#ggplot(data=sat_lm2, aes(x=residuals(sat_lm2))) + geom_histogram(bins=15) + xlab("Residual") + ylab("Frequency")
+
+```
+

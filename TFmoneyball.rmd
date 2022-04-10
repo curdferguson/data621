@@ -1,7 +1,7 @@
 ---
-title: "SAT study"
+title: "TF Moneyball"
 author: "Tyler Frankenberg"
-date: "02/27/2022"
+date: "03/06/2022"
 output:
   html_document: default
   pdf_document: default
@@ -17,166 +17,414 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, message=FALSE, warning=FALSE}
 
 library(tidyverse)
+library(ggcorrplot)
+library(rms)
 
 ```
 
 
 
-## Import data
+## Import data & Glimpse its Structure
 
+
+We'll start by viewing the Moneyball dataset's structure and the summary statistics for each of its columns.  We can see there are 16 columns of numeric data.
 
 
 ```{r, message=FALSE, warning=FALSE}
 
-url <- "https://raw.githubusercontent.com/curdferguson/data621/main/datasets/sat.txt"
+url <- "https://raw.githubusercontent.com/curdferguson/data621/main/datasets/moneyball-training-data.csv"
+moneyball_raw <- url %>% read_csv(na='') %>% column_to_rownames(var="INDEX")
 
-sat <- read_tsv(url, skip = 1, col_names = c("state", "expend", "ratio", "salary", "takers", "verbal", "math", "total"), show_col_types=FALSE)
-
-sat <- column_to_rownames(sat, var="state")
+moneyball_raw %>% head(5)
+moneyball_raw %>% summary()
 
 ```
 
 
 
-## Glimpse dataset structure and each column's summary statistics
+## Data Cleaning
+
+Our initial summary reveals a few immediate concerns:
+
+
+#### Investigate Zero-win Record Season
+
+There are implausible minimum values of `0` for several columns, including TARGET_WINS.  According to Wikipedia, the worst professional baseball season on record was achieved by 1875 Brooklyn Atlantics, of the short-lived "National Association".  Even the lowly Atlantics were able to scrape together two wins that year.  Filtering reveals these zero minimums to come from a single row, which has several `NA` values as well, so appears to be incomplete or erroneous.  We can safely remove this row from the data.   
+
+Source: https://en.wikipedia.org/wiki/List_of_worst_Major_League_Baseball_season_records
 
 
 ```{r, message=FALSE, warning=FALSE}
 
-sat %>% head(5)
-sat[,1:4] %>% summary()
-cat("\n")
-sat[,5:7] %>% summary()
-                        
+moneyball_raw0 <- moneyball_raw[moneyball_raw$TARGET_WINS > 0, ]
+
 ```
 
 
-## ANOVA
+#### Handle NA Values
 
-We construct a linear model with `expend`, `ratio`, and `salary` as predictors of the response variable `total`.
+There are a high number of of `NA` values in the columns TEAM_BATTING_SO, TEAM_BASERUN_SB, TEAM_BASERUN_CS, TEAM_BATTING_HBP, TEAM_PITCHING_SO, and TEAM_FIELDING_DP.  There is only one clear-cut case here, which is for the column TEAM_BATTING_HBP, which includes `772` NA values.  This will limit any linear model it is a part of, so we'll start by dropping this column from the dataset.
 
-Is the effect of these predictors on the response statistically significant?  We use an F-test for Analysis of Variance to test whether any of the predictors' coefficients is statistically different from zero.
-
-Our F-statistic of 4.0662 is sufficiently greater than that of the null model, and our p-value of 0.01209 indicates this result would be the result of chance in only 0.12% of hypothetical samples.
-
-We reject the null hypothesis that the coefficients of our predictors are statistically equivalent to zero, and take the effect of this model on the response as statistically significant at the 0.95 level.
+Next, we'll examine how many rows contain more than one `NA` value.  Since they are relatively few, but still number in the hundreds of rows, we will drop those rows from the dataset, rather than try to impute missing data.
 
 
 ```{r, message=FALSE, warning=FALSE}
 
-sat_lm1 <- lm(total ~ expend + ratio + salary, data=sat)
-lm1_sum <- summary(sat_lm1)
+moneyball_raw1 <- moneyball_raw0 %>% select(!c("TEAM_BATTING_HBP"))
+
+NArows <- data.frame(`NAvals>=4` = nrow(moneyball_raw1[rowSums(is.na(moneyball_raw1)) >= 4, ]),
+           `NAvals==3` = nrow(moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 3, ]),
+           `NAvals==2` = nrow(moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 2, ]),
+           `NAvals==1` = nrow(moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 1, ]),
+           `NAvals==0` = nrow(moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 0, ]))
+
+NArows
+
+#source: https://statisticsglobe.com/r-remove-data-frame-rows-with-some-or-all-na#:~:text=The%20output%20is%20the%20same%20as%20in%20the,you%20can%20replace%20%E2%80%9C%3D%3D%200%E2%80%9D%20by%20%E2%80%9C%3E%3D%202%E2%80%9D.
+
+```
+
+
+Next, we'll take a quick look at the rows with one `NA` value.  These fall either in the column TEAM_BASERUN_CS, or in TEAM_FIELDING_DP.  TEAM_BASERUN_CS is an interesting data point, because when added to TEAM_BASERUN_SB, it quantifies how often teams are willing to risk an out in order to advance a runner on the base path.  This is often mentioned as the type of "old school" baseball behavior that today's more conservative, analytically-minded organizations discourage.  Thus, it may help generate an important proxy for 'aggressiveness' in a team's offensive play.  Given the information we therefore can glean from this field, we'll keep the column though it contains hundreds of `NA` values, and drop the `NA` rows.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+head(moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 1, ], 10)
+
+```
+
+This leaves just 18 NAs on the column TEAM_FIELDING_DP.  This is certainly a low enough number of rows to consider imputation of a mean value; however, further investigation into this subset reveals additional concerns; namely, absurdly high values for TEAM_PITCHING_H (max = `30132`) and TEAM_PITCHING_SO (max = `192781`).  
+
+According to Baseball Almanac, the Major League record for most strikeouts in a season by a pitching staff is `1687` by the 2018 Houston Astros. Since our data goes all the way back to the earliest days of the sport in 1871, it likely includes team totals for clubs and leagues outside the modern definition of "Major" such as semi-professional teams, or "barnstorming" teams who dominated poorly-matched local competition as they toured the country.  
+
+Whether these values actually represent a herculean effort out of baseball's mythic age, or are simply erroneous, they are so outside the realm of plausibility for a modern-day team that we can consider them invalid and delete the rows.
+
+Source: https://www.baseball-almanac.com/recbooks/rb_strike2.shtml
+
+
+```{r, message=FALSE, warning=FALSE}
+
+moneyball_raw2 <- moneyball_raw1[rowSums(is.na(moneyball_raw1)) == 0, ]
+
+```
+
+
+
+## Transform Columns into Meaningful Measures
+
+
+Now that we have cleaned our raw data, we must consider the relevance of each column to a team's success, and therefore its conceptual appropriateness in a predictive model.  In other words, rather than taking each column at face value, we need to consider how it the underlying activity impacts the game of baseball, both on its own and in combination with the other measures.  We come up with the following for our test dataset, which we'll explain in more detail below.
+
+```{r, message=FALSE, warning=FALSE}
+
+moneyball_train <- moneyball_raw2 %>% summarise(
+    TARGET_WINS = TARGET_WINS,
+    TEAM_BATTING_TB = ((TEAM_BATTING_H - TEAM_BATTING_2B - TEAM_BATTING_3B - TEAM_BATTING_HR) + 2*TEAM_BATTING_2B + 3*TEAM_BATTING_3B + 4*TEAM_BATTING_HR),
+    TEAM_BATTING_BB = TEAM_BATTING_BB,
+    TEAM_BATTING_SO = TEAM_BATTING_SO,
+    TEAM_BASERUN_ATT = TEAM_BASERUN_SB + TEAM_BASERUN_CS,
+    TEAM_BASERUN_PCT = TEAM_BASERUN_SB / TEAM_BASERUN_ATT,
+    TEAM_FIELDING_E = TEAM_FIELDING_E,
+    TEAM_FIELDING_DP = TEAM_FIELDING_DP,
+    TEAM_PITCHING_BB = TEAM_PITCHING_BB,
+    TEAM_PITCHING_H = TEAM_PITCHING_H - TEAM_PITCHING_HR,
+    TEAM_PITCHING_HR = TEAM_PITCHING_HR,
+    TEAM_PITCHING_SO = TEAM_PITCHING_SO
+)
+
+summary(moneyball_train)
+
+
+```
+
+
+
+#### Batting Measures
+
+Since TEAM_BATTING_H is by its nature inclusive of the data in the 2B, 3B, and HR columns, we need to subtract their values from it so that it is only measuring single-base hits.  But we should also consider the fact that 2B, 3B, and HR are worth more in terms of progress toward runs scored - runs are of course the currency with which wins are acquired - and weight them appropriately.
+
+We can conveniently achieve these ends while making the model more concise by combining all of these columns together into the measure TEAM_BATTING_TB ("Total Bases"), a real-life baseball statistic which simply counts the number of bases achieved through hits in fair territory.
+
+TEAM_BATTING_BB and TEAM_BATTING_SO are somewhat more straightforward as measures in their own right, and both are relevant to the outcome of the game (though they may well be negatively correlated, as 'plate discipline', or the batter's ability to refrain from swinging at pitches thrown outside the "strike zone", should both increase his number of walks and reduce his number of strikeouts).
+
+
+Scatter plots vs. TARGET_WINS show clear positive linear associations for Total Bases and Walks, while Strikeouts seem to have a less impactful relationship.
+
+```{r, message=FALSE, warning=FALSE}
+
+batting_plots <- lapply(colnames(moneyball_train[, 2:4]), function(c) {
+  ggplot(moneyball_train, aes(moneyball_train[, c], TARGET_WINS)) + geom_jitter(color="gray", alpha=0.85) + geom_smooth(method = "lm") + xlab(c)
+ })
+
+batting_plots
+
+```
+
+#### Base Running Measures
+
+As we discussed above, we'll add TEAM_BASERUN_SB and TEAM_BASERUN_CS together to get TEAM_BASERUN_ATT ("Attempts").  This is a number we might expect to be higher for older teams and lower for modern-day teams, as contemporary analytics on which baseball strategy is now often based have come to frown upon the risk involved in base stealing.  But over the long term it should be a good proxy for "aggressive" (high TEAM_BASERUN_ATT) versus "conservative" (low TEAM_BASERUN_ATT) offensive play.  For good measure, we'll compute the percentage of attempts that resulted in successful steals as TEAM_BASERUN_PCT.
+
+There is an apparent positive linear association between both baserunning measures and TARGET_WINS.
+
+```{r, message=FALSE, warning=FALSE}
+
+baserun_plots <- lapply(colnames(moneyball_train[, 5:6]), function(c) {
+  ggplot(moneyball_train, aes(moneyball_train[, c], TARGET_WINS)) + geom_jitter(color="gray", alpha=0.85) + geom_smooth(method = "lm") + xlab(c)
+ })
+
+baserun_plots
+
+```
+
+
+#### Fielding Measures
+
+Team fielding statistics, in combination with pitching, give a picture of the team's defensive play.  We should be on the lookout for correlation with pitching measures, as for example, some pitchers strategically throw pitches that by their speed and movement are less likely to result in strikeouts and more likely to be hit softly and result in double plays.
+
+Fewer team errors are likely to result in more wins (as we might expect); however, the impact of double plays remains unclear from our initial "eyeball test".
+
+```{r, message=FALSE, warning=FALSE}
+
+fielding_plots <- lapply(colnames(moneyball_train[, 7:8]), function(c) {
+  ggplot(moneyball_train, aes(moneyball_train[, c], TARGET_WINS)) + geom_jitter(color="gray", alpha=0.85) + geom_smooth(method = "lm") + xlab(c)
+ }) 
+
+fielding_plots
+
+```
+
+#### Pitching Measures
+
+The team pitching statistics require no obvious transformations; however, their impact on target wins as evidenced in this dataset is curious.  We would expect pitching BB, H, and HR to have a negative association with TARGET_WINS and SO to have a positive association, and yet...
+
+While we can't weigh in definitively on the cause for our relationships being the way they are, further investigation might explore whether the rates of pitching statistics have fluctuated over the course of time and whether they associate positively or negatively with the level of parity in the league over those same periods.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+pitching_plots <- lapply(colnames(moneyball_train[, 9:12]), function(c) {
+  ggplot(moneyball_train, aes(moneyball_train[, c], TARGET_WINS)) + geom_jitter(color="gray", alpha=0.85) + geom_smooth(method = "lm") + xlab(c)
+ }) 
+
+pitching_plots
+
+```
+
+#### Correlation among variables
+
+As we noted previously, correlation among variables - and thus the potential for multicolinearity in any given linear model derived from the data - is of some concern.  A lower-half correlation matrix reveals this is indeed the case.  These are, after all, team statistics contributing toward wins in a team sport, and we expect some reasonable amount of relatedness amongst the individual performances on offense and defense.
+
+A few fields that stand out here:
+
+- TEAM_BATTING_BB and TEAM_PITCHING_BB, and TEAM_BATTING_SO and TEAM_PITCHING_SO are strongly correlated with one another.  This is curious, as the batting and pitching performances are, at face value, about as independent of one another as it gets in team sports.  Without a plausible explanation for the correlation, we'll proceed by adding interaction terms for each relationship to our linear model.
+
+- TEAM_FIELDING_E is negatively correlated with many of the variables in the dataset.  At first glance this might seem plausible, as we'd expect a high number of fielding errors to indicate a team that generally lacked discipline or was having a "down year".  However, it's notable that the columns with the highest degree of negative correlation are team batting strikeouts and team pitching strikeouts.
+
+- TEAM_BATTING_TB and TEAM_PITCHING_HR - the high degree of positive correlation in these measures may be due to the impact of confounding variables outside this dataset.  For example, homeruns and power hitting in general were notoriously rare during the "dead ball era" of the late 1800s and early 1900s when baseballs were constructed of less aerodynamic material and outfield fences ranged well over 400 yards, and have achieved record highs over the last 3 decades due variously to the use of performance enhancing drugs by hitters, the short distance of home run fences in modern baseball stadiums, and the adaptation of new hitting styles through the use of advancd motion-capture analytics.
+
+
+
+```{r, message=FALSE, warning=FALSE}
+
+corr <- cor(moneyball_train[, 2:12])
+p.mat <- cor_pmat(moneyball_train[, 2:12])
+
+ggcorrplot(corr, p.mat = p.mat, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+                                             
+#http://sthda.com/english/wiki/ggcorrplot-visualization-of-a-correlation-matrix-using-ggplot2#:~:text=ggcorrplot%20main%20features%20It%20provides%20a%20solution%20for,function%20for%20computing%20a%20matrix%20of%20correlation%20p-values.
+
+```
+
+
+## Create and Train a Linear Model
+
+We'll start by testing a linear model with our 11 relevant statistics plus our two interaction terms.  Based on the output of our `lm` and `summary` functions, we appear to be off to a promising start:
+
+- we have an adjusted $R^2$ value of `0.3908` and an F-statistic that is statistically significant at the 99% level.
+
+- we have a number of coefficients that are statistically significant at the 95% level, though most have a relatively small t-value.
+
+- the distribution of residuals appears approximately normal, with a median about =0.133, and our diagnostic plots give us no concerns regarding outliers with high leverage or non-linear relationships.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+lm1 <- lm(TARGET_WINS ~ TEAM_BATTING_TB + TEAM_BATTING_BB + TEAM_BATTING_SO + TEAM_BASERUN_ATT + TEAM_BASERUN_PCT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_BB + TEAM_PITCHING_H + TEAM_PITCHING_HR +
+            TEAM_PITCHING_SO + 
+            TEAM_BATTING_SO*TEAM_PITCHING_SO + TEAM_BATTING_BB*TEAM_PITCHING_BB, 
+          data=moneyball_train)
+
+lm1_sum <- summary(lm1)
 lm1_sum
 
-sat_nullmod <- lm(total ~ 1, data=sat)
+plot(lm1)
+                        
+```
 
-lm1_anova <- anova(sat_nullmod, sat_lm1)
-lm1_anova
+## Backward Stepwise Elimination
+
+We'll now iterate through a series of models in which we will eliminate the statistically insignificant coefficient with the lowest t-value.  We'll pause when we have achieved a model with only statistically significant coefficients.
+
+
+```{r, message=FALSE, warning=FALSE}
+
+#Eliminate TEAM_BATTING_TB
+
+lm2 <- lm(TARGET_WINS ~ TEAM_BATTING_BB + TEAM_BATTING_SO + 
+            TEAM_BASERUN_ATT + TEAM_BASERUN_PCT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_BB + TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO + 
+            TEAM_BATTING_SO*TEAM_PITCHING_SO + TEAM_BATTING_BB*TEAM_PITCHING_BB, 
+          data=moneyball_train)
+
+lm2_sum <- summary(lm2, cor=TRUE)
+
+
+#Eliminate TEAM_BASERUN_PCT
+
+lm3 <- lm(TARGET_WINS ~ TEAM_BATTING_BB + TEAM_BATTING_SO + 
+            TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_BB + TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO + 
+            TEAM_BATTING_SO*TEAM_PITCHING_SO + TEAM_BATTING_BB*TEAM_PITCHING_BB, 
+          data=moneyball_train)
+
+lm3_sum <- summary(lm3, cor=TRUE)
+
+
+# Eliminate TEAM_BATTING_SO and SO interaction term
+
+lm4 <- lm(TARGET_WINS ~ TEAM_BATTING_BB + 
+            TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_BB + TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO + 
+            TEAM_BATTING_BB*TEAM_PITCHING_BB, 
+          data=moneyball_train)
+
+lm4_sum <- summary(lm4, cor=TRUE)
+
+# Eliminate TEAM_BATTING_BB*TEAM_PITCHING_BB interaction term
+
+lm5 <- lm(TARGET_WINS ~ TEAM_BATTING_BB + 
+            TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_BB + TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO, 
+          data=moneyball_train)
+
+lm5_sum <- summary(lm5, cor=TRUE)
                         
 ```
 
 
-## Examine the effect of a new variable using ANOVA and T-test
+#### Review Viable Model
 
-We add the predictor `takers` to the model.
+The first model with only statistically significant coefficients is our 6th... model `lm6`.
 
-Is the additon of this predictor on the response statistically significant?  We can test this in two ways; using a t-test for the specific variable and using an F-test to compare the effect of the first and second models as a whole.  Then we can show that the results of these two methods are actually the same.
-
-
-#### T-test
-
-first, we can output the regresion summary of the new model and observe the value of the t-statistic and p-value for `takers`.  
-
-Our regression summary output gives a t-value of -12.559 and a p-value of 2.61e-16 for `takers`.  This indicates the coefficient is about 12.5 times the size of its standard error, and that we'd expect this to be the result of chance in well fewer than 0.01% of hypothetical samples.
-
-We conclude by this result that we can reject the null hypothesis at the 0.95% level of statistical significance, and assume the impact of `takers` to be significant.
+- The adjusted $R^2$ is still high for this model, at `0.3837`. 
+- The Residuals are normally distributed about a median at `0.006`; the absolute values of Min and Max residuals are nearly equal, as are the 1Q and 3Q values.
+- Nothing in the residual-fitted or scale-location plots indicates a nonlinear or heteroscedastic distribution of residuals, and the outliers in our dataset do not exert unwelcome leverage.
 
 
-#### ANOVA
-
-Second, we can use an F-test for Analysis of Variance between the new model and previous model to test whether the additional impact of the coefficient for `takers` is statistically different from zero.
-
-Our F-statistic of 157.74 is sufficiently greater than that of the model without `takers`, and our p-value of 2.607e-16 indicates this result would be the result of chance in well fewer than 0.01% of hypothetical samples.
-
-We reject the null hypothesis that the difference in the coefficients of our predictors is statistically equivalent to zero, and take the effect of this model on the response as statistically significant at the 0.95 level.
-
-
-#### Verify equivalence
-
-Finally, we can verify that our results from these two tests are the same.  We expect that our ANOVA F statistic should be approximately the square of our t-value for the added variable `takers`, and that their p-values would be equal.  
-
-As we see in our output below, the difference between the t-value squared and the F-statistic, as well as between the p-values, are each so small as to be functionally equivalent to zero. 
+As regards the coefficients themselves, there are no surprises here that we haven't already commented on in the analysis of scatter plots above; it is interesting, however, that TEAM_FIELDING_E and TEAM_FIELDING_DP show the greatest impact on the data.
 
 
 ```{r, message=FALSE, warning=FALSE}
 
-# method 1 - regression summary output t-test
-sat_lm2 <- lm(total ~ expend + ratio + salary + takers, data=sat)
-lm2_sum <- summary(sat_lm2)
-lm2_sum
+# Eliminate TEAM_PITCHING_BB
 
-# method 2 - ANOVAb
-lm2_anova <- anova(sat_lm1, sat_lm2)
-lm2_anova
+lm6 <- lm(TARGET_WINS ~ TEAM_BATTING_BB + 
+            TEAM_BASERUN_ATT + 
+            TEAM_FIELDING_E + TEAM_FIELDING_DP + 
+            TEAM_PITCHING_H + TEAM_PITCHING_HR + TEAM_PITCHING_SO, 
+          data=moneyball_train)
 
-# verification
-(lm2_sum$coefficients["takers", "t value"])^2 - lm2_anova$`F`
-(lm2_sum$coefficients["takers", "Pr(>|t|)"]) - lm2_anova$`Pr(>F)`
+lm6_sum <- summary(lm6, cor=TRUE)
+summary(lm6)
+
+plot(lm6)
+                        
+```
+
+#### Addressing Multicolinearity
+
+What of the potential for multicolinearity we discussed above?  Displaying a correlation matrix for the coefficients in the data, we see we have one statistically-significant negative correlation between TEAM_PITCHING_SO and TEAM_PITCHING_HR.
+
+Intuitively this isn't outside the realm of plausibility, though we'll still do our due diligence and investigate further by calculating the variance inflation factor of each item in the model.  This shows the extent to which the model variance is inflated due to the colinearity of two variables.  In this case, our VIF output shows values of less than `2.5`, well below the threshold of `4` at which we'd want to adjust the model.
+
+Therefore, we can assume that the interaction of TEAM_PITCHING_SO and TEAM_PITCHING_HR is not impactul enough to warrant further adjustment to the model.
+
+Source:
+https://corporatefinanceinstitute.com/resources/knowledge/other/variance-inflation-factor-vif/
+
+```{r, message=FALSE, warning=FALSE}
+
+
+# correlation matrix
+
+corr6 <- cor(lm6_sum$correlation)[2:8, 2:8]
+p.mat6 <- cor_pmat(lm6_sum$correlation)[2:8, 2:8]
+
+ggcorr6 <- ggcorrplot(corr6, p.mat= p.mat6, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+
+ggcorr6
+
+
+# Variance Inflation Factor
+v6 <- vif(lm6)
+v6
 
 ```
 
 
-## Regression Model Diagnostics
-
-#### Constant Variance & Linearity of Relationship
-
-We conduct diagnostics of our model `sat_lm2`.  First, we'll check the Constant Variance assumption by plotting the residuals versus the fitted y-values.  
-
-While the range over which the residuals vary is about equal on the left and right hand sides, the distribution of points in the middle is skewed to the negative side of the range.  The smoothed curve suggest adding a quadratic term to the model may be an appropriate transformation.
-
-There are also 3 outliers noted on the plot - the values for North Dakota, New Hampshire, and West Virginia need to be reviewed for validity and may factor in additional transformations to the model.
-
-Viewing the Scale-Location plot backs up our understanding of the model - the residuals have a constant spread but we have a problem in the shape of the model and thus the linearity of the relationship between predictors and response.  We also see Utah surface as another outlier.
+## Test the Model
 
 
-```{r, message=FALSE, warning=FALSE}
+#### Import Test Dataset and Transform Variables
 
-plot(sat_lm2, 1)
-plot(sat_lm2, 3)
-
-#ggplot(sat_lm2, aes(x=fitted(sat_lm2), y=residuals(sat_lm2))) + geom_jitter() + geom_hline(yintercept=0, color="blue") + xlab("Fitted") + ylab("Residuals")
-
-```
+We'll start by importing our evaluation dataset and transforming its columns to include the measures we developed for the previous model.  
 
 
-#### Normality of Residuals
+``` {r}
 
-Next, we'll check for the normality of our distributed residuals.  Using a quantile - quantile plot and a histogram of residuals, we can see that the shape of the distribution is approximately normal with some slight deviation from normality at the tails, accounted for by our known outliers plus another identified in the plot - Utah.
+url1 <- "https://raw.githubusercontent.com/curdferguson/data621/main/datasets/moneyball-evaluation-data.csv"
 
-Notably, our data point for West Virginia seems to skew the distribution of residuals slightly leftward in the histogram visualization.  It's time we take a look at the influence of each of these outliers on the model as a whole.
+moneyball_test <- url1 %>% read_csv(na='') %>% column_to_rownames(var="INDEX")
+moneyball_test1 <- moneyball_test %>% select(!c("TEAM_BATTING_HBP"))
 
+moneyball_test <- moneyball_test1 %>% summarise(
+    TEAM_BATTING_TB = ((TEAM_BATTING_H - TEAM_BATTING_2B - TEAM_BATTING_3B - TEAM_BATTING_HR) + 2*TEAM_BATTING_2B + 3*TEAM_BATTING_3B + 4*TEAM_BATTING_HR),
+    TEAM_BATTING_BB = TEAM_BATTING_BB,
+    TEAM_BATTING_SO = TEAM_BATTING_SO,
+    TEAM_BASERUN_ATT = TEAM_BASERUN_SB + TEAM_BASERUN_CS,
+    TEAM_BASERUN_PCT = TEAM_BASERUN_SB / TEAM_BASERUN_ATT,
+    TEAM_FIELDING_E = TEAM_FIELDING_E,
+    TEAM_FIELDING_DP = TEAM_FIELDING_DP,
+    TEAM_PITCHING_BB = TEAM_PITCHING_BB,
+    TEAM_PITCHING_H = TEAM_PITCHING_H - TEAM_PITCHING_HR,
+    TEAM_PITCHING_HR = TEAM_PITCHING_HR,
+    TEAM_PITCHING_SO = TEAM_PITCHING_SO
+)
 
-```{r, message=FALSE, warning=FALSE}
-
-plot(sat_lm2, 2)
-
-ggplot(data=sat_lm2, aes(x=residuals(sat_lm2))) + geom_histogram(bins=15) + xlab("Residual") + ylab("Frequency")
+summary(moneyball_test)
 
 ```
 
 
-#### Assessing leverage
-
-Looking at the residuals vs. leverage plot below, we see that for the most part, our data including the points of high leverage cluster within the area between -2 and 2 standardized residuals.
-
-The point of most concern is Utah, which exerts the most influence over the dataset and falls just within the acceptable range of Cook's Distance (0.5).  This is not enough of an anomaly to impact our assumptions of the model's validity.
 
 
-```{r, message=FALSE, warning=FALSE}
+#### Calculate predictions using the training model
 
-plot(sat_lm2, 5)
 
-#ggplot(data=sat_lm2, aes(x=residuals(sat_lm2))) + geom_histogram(bins=15) + xlab("Residual") + ylab("Frequency")
+```{r} 
+
+moneyball_test <- moneyball_test %>% mutate(predicted_wins = lm6$coefficients[1] + TEAM_BATTING_BB*lm6$coefficients[2] + TEAM_BASERUN_ATT*lm6$coefficients[3] +  TEAM_FIELDING_E*lm6$coefficients[4] + TEAM_FIELDING_DP*lm6$coefficients[5] + TEAM_PITCHING_H*lm6$coefficients[6] + TEAM_PITCHING_HR*lm6$coefficients[7] + TEAM_PITCHING_SO*lm6$coefficients[8])
+
+```
 
 ```
 

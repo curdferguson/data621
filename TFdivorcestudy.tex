@@ -1,0 +1,527 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Divorce study},
+  pdfauthor={Tyler Frankenberg},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{Divorce study}
+\author{Tyler Frankenberg}
+\date{03/13/2022}
+
+\begin{document}
+\maketitle
+
+\hypertarget{import-packages}{%
+\subsection{Import packages}\label{import-packages}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\FunctionTok{library}\NormalTok{(ggcorrplot)}
+\FunctionTok{library}\NormalTok{(rms)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{import-data}{%
+\subsection{Import data}\label{import-data}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{url }\OtherTok{\textless{}{-}} \StringTok{"https://raw.githubusercontent.com/curdferguson/data621/main/datasets/divusa.txt"}
+
+\NormalTok{divusa }\OtherTok{\textless{}{-}} \FunctionTok{read\_tsv}\NormalTok{(url, }\AttributeTok{skip =} \DecValTok{1}\NormalTok{, }\AttributeTok{col\_names =} \FunctionTok{c}\NormalTok{(}\StringTok{"index"}\NormalTok{, }\StringTok{"year"}\NormalTok{, }\StringTok{"divorce"}\NormalTok{, }\StringTok{"unemployed"}\NormalTok{, }\StringTok{"femlab"}\NormalTok{, }\StringTok{"marriage"}\NormalTok{, }\StringTok{"birth"}\NormalTok{, }\StringTok{"military"}\NormalTok{), }\AttributeTok{show\_col\_types=}\ConstantTok{FALSE}\NormalTok{)}
+
+\NormalTok{divusa }\OtherTok{\textless{}{-}}\NormalTok{ divusa[,}\DecValTok{2}\SpecialCharTok{:}\DecValTok{8}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{glimpse-dataset-structure-and-each-columns-summary-statistics}{%
+\subsection{Glimpse dataset structure and each column's summary
+statistics}\label{glimpse-dataset-structure-and-each-columns-summary-statistics}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{divusa }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{head}\NormalTok{(}\DecValTok{5}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 5 x 7
+##    year divorce unemployed femlab marriage birth military
+##   <dbl>   <dbl>      <dbl>  <dbl>    <dbl> <dbl>    <dbl>
+## 1  1920     8          5.2   22.7     92    118.     3.22
+## 2  1921     7.2       11.7   22.8     83    120.     3.56
+## 3  1922     6.6        6.7   22.9     79.7  111.     2.46
+## 4  1923     7.1        2.4   23.0     85.2  110.     2.21
+## 5  1924     7.2        5     23.1     80.3  111.     2.29
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{divusa }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{summary}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       year         divorce        unemployed         femlab     
+##  Min.   :1920   Min.   : 6.10   Min.   : 1.200   Min.   :22.70  
+##  1st Qu.:1939   1st Qu.: 8.70   1st Qu.: 4.200   1st Qu.:27.47  
+##  Median :1958   Median :10.60   Median : 5.600   Median :37.10  
+##  Mean   :1958   Mean   :13.27   Mean   : 7.173   Mean   :38.58  
+##  3rd Qu.:1977   3rd Qu.:20.30   3rd Qu.: 7.500   3rd Qu.:47.80  
+##  Max.   :1996   Max.   :22.80   Max.   :24.900   Max.   :59.30  
+##     marriage          birth           military     
+##  Min.   : 49.70   Min.   : 65.30   Min.   : 1.940  
+##  1st Qu.: 61.90   1st Qu.: 68.90   1st Qu.: 3.469  
+##  Median : 74.10   Median : 85.90   Median : 9.102  
+##  Mean   : 72.97   Mean   : 88.89   Mean   :12.365  
+##  3rd Qu.: 80.00   3rd Qu.:107.30   3rd Qu.:14.266  
+##  Max.   :118.10   Max.   :122.90   Max.   :86.641
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{divusa }\OtherTok{\textless{}{-}}\NormalTok{ divusa }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{mutate}\NormalTok{(}\AttributeTok{year =}\NormalTok{ year,}
+                            \AttributeTok{divorce =}\NormalTok{ divorce }\SpecialCharTok{/} \DecValTok{1000}\NormalTok{,}
+                            \AttributeTok{unemployed =}\NormalTok{ unemployed }\SpecialCharTok{/} \DecValTok{100}\NormalTok{,}
+                            \AttributeTok{femlab =}\NormalTok{ femlab }\SpecialCharTok{/} \DecValTok{100}\NormalTok{,}
+                            \AttributeTok{marriage =}\NormalTok{ marriage }\SpecialCharTok{/} \DecValTok{1000}\NormalTok{,}
+                            \AttributeTok{birth =}\NormalTok{ birth }\SpecialCharTok{/} \DecValTok{1000}\NormalTok{,}
+                            \AttributeTok{military =}\NormalTok{ military }\SpecialCharTok{/} \DecValTok{1000}\NormalTok{)}
+
+\NormalTok{divusa }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{head}\NormalTok{(}\DecValTok{5}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 5 x 7
+##    year divorce unemployed femlab marriage birth military
+##   <dbl>   <dbl>      <dbl>  <dbl>    <dbl> <dbl>    <dbl>
+## 1  1920  0.008       0.052  0.227   0.092  0.118  0.00322
+## 2  1921  0.0072      0.117  0.228   0.083  0.120  0.00356
+## 3  1922  0.0066      0.067  0.229   0.0797 0.111  0.00246
+## 4  1923  0.0071      0.024  0.230   0.0852 0.110  0.00221
+## 5  1924  0.0072      0.05   0.231   0.0803 0.111  0.00229
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{divusa }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{summary}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       year         divorce          unemployed          femlab      
+##  Min.   :1920   Min.   :0.00610   Min.   :0.01200   Min.   :0.2270  
+##  1st Qu.:1939   1st Qu.:0.00870   1st Qu.:0.04200   1st Qu.:0.2747  
+##  Median :1958   Median :0.01060   Median :0.05600   Median :0.3710  
+##  Mean   :1958   Mean   :0.01327   Mean   :0.07173   Mean   :0.3858  
+##  3rd Qu.:1977   3rd Qu.:0.02030   3rd Qu.:0.07500   3rd Qu.:0.4780  
+##  Max.   :1996   Max.   :0.02280   Max.   :0.24900   Max.   :0.5930  
+##     marriage           birth            military       
+##  Min.   :0.04970   Min.   :0.06530   Min.   :0.001940  
+##  1st Qu.:0.06190   1st Qu.:0.06890   1st Qu.:0.003469  
+##  Median :0.07410   Median :0.08590   Median :0.009102  
+##  Mean   :0.07297   Mean   :0.08889   Mean   :0.012365  
+##  3rd Qu.:0.08000   3rd Qu.:0.10730   3rd Qu.:0.014266  
+##  Max.   :0.11810   Max.   :0.12290   Max.   :0.086641
+\end{verbatim}
+
+\hypertarget{view-change-in-each-column-over-time}{%
+\subsection{View change in each column over
+time}\label{view-change-in-each-column-over-time}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{divusa\_numeric\_long }\OtherTok{\textless{}{-}}\NormalTok{ divusa }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{select}\NormalTok{(}\SpecialCharTok{!}\NormalTok{birth) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{pivot\_longer}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(}\FunctionTok{select}\NormalTok{(divusa, }\SpecialCharTok{!}\FunctionTok{c}\NormalTok{(year, birth)))) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{as.data.frame}\NormalTok{()}
+
+\FunctionTok{ggplot}\NormalTok{(}\AttributeTok{data=}\NormalTok{divusa\_numeric\_long, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x=}\NormalTok{year, }\AttributeTok{y=}\NormalTok{value, }\AttributeTok{group=}\NormalTok{name, }\AttributeTok{fill=}\NormalTok{name)) }\SpecialCharTok{+} \FunctionTok{geom\_line}\NormalTok{(}\FunctionTok{aes}\NormalTok{(}\AttributeTok{col=}\NormalTok{name))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\hypertarget{view-scatter-plots-of-each-column}{%
+\subsection{View scatter plots of each
+column}\label{view-scatter-plots-of-each-column}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{plot\_list }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(}\FunctionTok{colnames}\NormalTok{(divusa[, }\DecValTok{3}\SpecialCharTok{:}\DecValTok{7}\NormalTok{]), }\ControlFlowTok{function}\NormalTok{(c) \{}
+  \FunctionTok{ggplot}\NormalTok{(divusa, }\FunctionTok{aes}\NormalTok{(}\FunctionTok{unlist}\NormalTok{(divusa[, c]), }\FunctionTok{unlist}\NormalTok{(divorce))) }\SpecialCharTok{+} 
+    \FunctionTok{geom\_jitter}\NormalTok{(}\AttributeTok{color=}\StringTok{"gray"}\NormalTok{, }\AttributeTok{alpha=}\FloatTok{0.85}\NormalTok{) }\SpecialCharTok{+} 
+    \FunctionTok{geom\_smooth}\NormalTok{(}\AttributeTok{method =} \StringTok{"lm"}\NormalTok{) }\SpecialCharTok{+} \FunctionTok{xlab}\NormalTok{(c)}
+\NormalTok{ \}) }
+
+
+\NormalTok{plot\_list}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [[1]]
+\end{verbatim}
+
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\begin{verbatim}
+## 
+## [[2]]
+\end{verbatim}
+
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-5-2.pdf}
+
+\begin{verbatim}
+## 
+## [[3]]
+\end{verbatim}
+
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-5-3.pdf}
+
+\begin{verbatim}
+## 
+## [[4]]
+\end{verbatim}
+
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-5-4.pdf}
+
+\begin{verbatim}
+## 
+## [[5]]
+\end{verbatim}
+
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-5-5.pdf}
+
+\hypertarget{fit-linear-model-and-address-multicolinearity}{%
+\subsection{Fit linear model and address
+multicolinearity}\label{fit-linear-model-and-address-multicolinearity}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{div\_lm1 }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(divorce }\SpecialCharTok{\textasciitilde{}}\NormalTok{ unemployed }\SpecialCharTok{+}\NormalTok{ femlab }\SpecialCharTok{+}\NormalTok{ marriage }\SpecialCharTok{+}\NormalTok{ birth }\SpecialCharTok{+}\NormalTok{ military, }\AttributeTok{data=}\NormalTok{divusa)}
+\NormalTok{div\_lm1\_sum }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(div\_lm1, }\AttributeTok{cor=}\ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{div\_lm1\_sum}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = divorce ~ unemployed + femlab + marriage + birth + 
+##     military, data = divusa)
+## 
+## Residuals:
+##        Min         1Q     Median         3Q        Max 
+## -0.0038611 -0.0008916 -0.0000496  0.0008650  0.0038300 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  0.002488   0.003394   0.733   0.4659    
+## unemployed  -0.011125   0.005592  -1.989   0.0505 .  
+## femlab       0.038365   0.003059  12.543  < 2e-16 ***
+## marriage     0.118674   0.024414   4.861 6.77e-06 ***
+## birth       -0.129959   0.015595  -8.333 4.03e-12 ***
+## military    -0.026734   0.014247  -1.876   0.0647 .  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.00165 on 71 degrees of freedom
+## Multiple R-squared:  0.9208, Adjusted R-squared:  0.9152 
+## F-statistic: 165.1 on 5 and 71 DF,  p-value: < 2.2e-16
+## 
+## Correlation of Coefficients:
+##            (Intercept) unemployed femlab marriage birth
+## unemployed -0.75                                       
+## femlab     -0.93        0.65                           
+## marriage   -0.69        0.37       0.57                
+## birth      -0.55        0.47       0.51  -0.17         
+## military    0.02        0.24      -0.06  -0.21     0.07
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# correlation matrix}
+
+\NormalTok{corr1 }\OtherTok{\textless{}{-}} \FunctionTok{cor}\NormalTok{(div\_lm1\_sum}\SpecialCharTok{$}\NormalTok{correlation)[}\DecValTok{2}\SpecialCharTok{:}\DecValTok{6}\NormalTok{, }\DecValTok{2}\SpecialCharTok{:}\DecValTok{6}\NormalTok{]}
+\NormalTok{p.mat1 }\OtherTok{\textless{}{-}} \FunctionTok{cor\_pmat}\NormalTok{(div\_lm1\_sum}\SpecialCharTok{$}\NormalTok{correlation)[}\DecValTok{2}\SpecialCharTok{:}\DecValTok{6}\NormalTok{, }\DecValTok{2}\SpecialCharTok{:}\DecValTok{6}\NormalTok{]}
+
+\NormalTok{ggcorr1 }\OtherTok{\textless{}{-}} \FunctionTok{ggcorrplot}\NormalTok{(corr1, }\AttributeTok{p.mat=}\NormalTok{ p.mat1, }\AttributeTok{hc.order =} \ConstantTok{TRUE}\NormalTok{,}
+    \AttributeTok{type =} \StringTok{"lower"}\NormalTok{, }\AttributeTok{insig =} \StringTok{"blank"}\NormalTok{, }\AttributeTok{lab=}\ConstantTok{TRUE}\NormalTok{)}
+
+\NormalTok{ggcorr1}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Variance Inflation Factor}
+\NormalTok{vif1 }\OtherTok{\textless{}{-}} \FunctionTok{vif}\NormalTok{(div\_lm1)}
+\NormalTok{vif1}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## unemployed     femlab   marriage      birth   military 
+##   2.252888   3.613276   2.864864   2.585485   1.249596
+\end{verbatim}
+
+\hypertarget{remove-an-insignificant-variable-and-re-fit-model}{%
+\paragraph{Remove an insignificant variable and re-fit
+model}\label{remove-an-insignificant-variable-and-re-fit-model}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#Fit 2nd model, removing military}
+\NormalTok{div\_lm2 }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(divorce }\SpecialCharTok{\textasciitilde{}}\NormalTok{ unemployed }\SpecialCharTok{+}\NormalTok{ femlab }\SpecialCharTok{+}\NormalTok{ marriage }\SpecialCharTok{+}\NormalTok{ birth, }\AttributeTok{data=}\NormalTok{divusa)}
+\NormalTok{div\_lm2\_sum }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(div\_lm2, }\AttributeTok{cor=}\ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{div\_lm2\_sum}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = divorce ~ unemployed + femlab + marriage + birth, 
+##     data = divusa)
+## 
+## Residuals:
+##        Min         1Q     Median         3Q        Max 
+## -0.0038559 -0.0009217 -0.0000119  0.0009055  0.0040391 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  0.002613   0.003452   0.757    0.451    
+## unemployed  -0.008613   0.005524  -1.559    0.123    
+## femlab       0.038004   0.003106  12.237  < 2e-16 ***
+## marriage     0.109253   0.024307   4.495 2.61e-05 ***
+## birth       -0.127819   0.015823  -8.078 1.10e-11 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.001679 on 72 degrees of freedom
+## Multiple R-squared:  0.9169, Adjusted R-squared:  0.9123 
+## F-statistic: 198.6 on 4 and 72 DF,  p-value: < 2.2e-16
+## 
+## Correlation of Coefficients:
+##            (Intercept) unemployed femlab marriage
+## unemployed -0.77                                 
+## femlab     -0.93        0.69                     
+## marriage   -0.70        0.44       0.57          
+## birth      -0.56        0.47       0.51  -0.16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# correlation matrix}
+
+\NormalTok{corr2 }\OtherTok{\textless{}{-}} \FunctionTok{cor}\NormalTok{(div\_lm2\_sum}\SpecialCharTok{$}\NormalTok{correlation)[}\DecValTok{2}\SpecialCharTok{:}\DecValTok{5}\NormalTok{, }\DecValTok{2}\SpecialCharTok{:}\DecValTok{5}\NormalTok{]}
+\NormalTok{p.mat2 }\OtherTok{\textless{}{-}} \FunctionTok{cor\_pmat}\NormalTok{(div\_lm2\_sum}\SpecialCharTok{$}\NormalTok{correlation)[}\DecValTok{2}\SpecialCharTok{:}\DecValTok{5}\NormalTok{, }\DecValTok{2}\SpecialCharTok{:}\DecValTok{5}\NormalTok{]}
+
+\NormalTok{ggcorr2 }\OtherTok{\textless{}{-}} \FunctionTok{ggcorrplot}\NormalTok{(corr2, }\AttributeTok{p.mat=}\NormalTok{ p.mat2, }\AttributeTok{hc.order =} \ConstantTok{TRUE}\NormalTok{,}
+    \AttributeTok{type =} \StringTok{"lower"}\NormalTok{, }\AttributeTok{insig =} \StringTok{"blank"}\NormalTok{, }\AttributeTok{lab=}\ConstantTok{TRUE}\NormalTok{)}
+
+\NormalTok{ggcorr2}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-7-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Variance Inflation Factor}
+\NormalTok{vif2 }\OtherTok{\textless{}{-}} \FunctionTok{vif}\NormalTok{(div\_lm2)}
+\NormalTok{vif2         }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## unemployed     femlab   marriage      birth 
+##   2.123735   3.598997   2.743709   2.571650
+\end{verbatim}
+
+\hypertarget{remove-least-significant-variable-and-re-fit-model}{%
+\paragraph{Remove least significant variable and re-fit
+model}\label{remove-least-significant-variable-and-re-fit-model}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Fit 3rd Model, removing unemployed}
+\NormalTok{div\_lm3 }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(divorce }\SpecialCharTok{\textasciitilde{}}\NormalTok{ femlab }\SpecialCharTok{+}\NormalTok{ marriage }\SpecialCharTok{+}\NormalTok{ birth, }\AttributeTok{data=}\NormalTok{divusa)}
+\NormalTok{div\_lm3\_sum }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(div\_lm3, }\AttributeTok{cor=}\ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{div\_lm3\_sum}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = divorce ~ femlab + marriage + birth, data = divusa)
+## 
+## Residuals:
+##        Min         1Q     Median         3Q        Max 
+## -0.0036923 -0.0011934 -0.0000534  0.0012265  0.0036701 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) -0.001545   0.002212  -0.699    0.487    
+## femlab       0.041337   0.002275  18.174  < 2e-16 ***
+## marriage     0.126094   0.021988   5.735 2.07e-07 ***
+## birth       -0.116274   0.014120  -8.235 5.10e-12 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 0.001695 on 73 degrees of freedom
+## Multiple R-squared:  0.9141, Adjusted R-squared:  0.9106 
+## F-statistic: 258.9 on 3 and 73 DF,  p-value: < 2.2e-16
+## 
+## Correlation of Coefficients:
+##          (Intercept) femlab marriage
+## femlab   -0.86                      
+## marriage -0.62        0.41          
+## birth    -0.35        0.30  -0.46
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# correlation matrix}
+
+\NormalTok{corr3 }\OtherTok{\textless{}{-}} \FunctionTok{cor}\NormalTok{(div\_lm3\_sum}\SpecialCharTok{$}\NormalTok{correlation)[}\DecValTok{2}\SpecialCharTok{:}\DecValTok{4}\NormalTok{, }\DecValTok{2}\SpecialCharTok{:}\DecValTok{4}\NormalTok{]}
+\NormalTok{p.mat3 }\OtherTok{\textless{}{-}} \FunctionTok{cor\_pmat}\NormalTok{(div\_lm3\_sum}\SpecialCharTok{$}\NormalTok{correlation)[}\DecValTok{2}\SpecialCharTok{:}\DecValTok{4}\NormalTok{, }\DecValTok{2}\SpecialCharTok{:}\DecValTok{4}\NormalTok{]}
+
+\NormalTok{ggcorr3 }\OtherTok{\textless{}{-}} \FunctionTok{ggcorrplot}\NormalTok{(corr3, }\AttributeTok{p.mat=}\NormalTok{ p.mat3, }\AttributeTok{hc.order =} \ConstantTok{TRUE}\NormalTok{,}
+    \AttributeTok{type =} \StringTok{"lower"}\NormalTok{, }\AttributeTok{insig =} \StringTok{"blank"}\NormalTok{, }\AttributeTok{lab=}\ConstantTok{TRUE}\NormalTok{)}
+
+\NormalTok{ggcorr3}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-8-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(div\_lm3)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-8-2.pdf}
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-8-3.pdf}
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-8-4.pdf}
+\includegraphics{TFdivorcestudy_files/figure-latex/unnamed-chunk-8-5.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Variance Inflation Factor}
+\NormalTok{vif3 }\OtherTok{\textless{}{-}} \FunctionTok{vif}\NormalTok{(div\_lm3)}
+\NormalTok{vif3         }
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##   femlab marriage    birth 
+## 1.893390 2.201891 2.008469
+\end{verbatim}
+
+```
+
+\end{document}

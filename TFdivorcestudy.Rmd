@@ -1,12 +1,16 @@
 ---
 title: "Divorce study"
 author: "Tyler Frankenberg"
-date: "1/30/2022"
-output: html_document
+date: "03/13/2022"
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
+
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
 
 
@@ -16,6 +20,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, message=FALSE, warning=FALSE}
 
 library(tidyverse)
+library(ggcorrplot)
+library(rms)
 
 ```
 
@@ -43,6 +49,17 @@ divusa <- divusa[,2:8]
 
 divusa %>% head(5)
 divusa %>% summary()
+
+divusa <- divusa %>% mutate(year = year,
+                            divorce = divorce / 1000,
+                            unemployed = unemployed / 100,
+                            femlab = femlab / 100,
+                            marriage = marriage / 1000,
+                            birth = birth / 1000,
+                            military = military / 1000)
+
+divusa %>% head(5)
+divusa %>% summary()
                         
 ```
 
@@ -57,10 +74,107 @@ ggplot(data=divusa_numeric_long, aes(x=year, y=value, group=name, fill=name)) + 
                         
 ```
 
-## View histograms of each column
+## View scatter plots of each column
 
 ```{r, message=FALSE, warning=FALSE}
 
-divusa %>% pairs()
+plot_list <- lapply(colnames(divusa[, 3:7]), function(c) {
+  ggplot(divusa, aes(unlist(divusa[, c]), unlist(divorce))) + 
+    geom_jitter(color="gray", alpha=0.85) + 
+    geom_smooth(method = "lm") + xlab(c)
+ }) 
+
+
+plot_list
                         
+```
+
+
+
+## Fit linear model and address multicolinearity
+
+
+```{r, message=FALSE, warning=FALSE}
+
+div_lm1 <- lm(divorce ~ unemployed + femlab + marriage + birth + military, data=divusa)
+div_lm1_sum <- summary(div_lm1, cor=TRUE)
+div_lm1_sum
+
+
+# correlation matrix
+
+corr1 <- cor(div_lm1_sum$correlation)[2:6, 2:6]
+p.mat1 <- cor_pmat(div_lm1_sum$correlation)[2:6, 2:6]
+
+ggcorr1 <- ggcorrplot(corr1, p.mat= p.mat1, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+
+ggcorr1
+
+
+# Variance Inflation Factor
+vif1 <- vif(div_lm1)
+vif1
+     
+```
+
+
+#### Remove an insignificant variable and re-fit model
+
+```{r, message=FALSE, warning=FALSE}
+
+#Fit 2nd model, removing military
+div_lm2 <- lm(divorce ~ unemployed + femlab + marriage + birth, data=divusa)
+div_lm2_sum <- summary(div_lm2, cor=TRUE)
+div_lm2_sum
+
+
+               
+# correlation matrix
+
+corr2 <- cor(div_lm2_sum$correlation)[2:5, 2:5]
+p.mat2 <- cor_pmat(div_lm2_sum$correlation)[2:5, 2:5]
+
+ggcorr2 <- ggcorrplot(corr2, p.mat= p.mat2, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+
+ggcorr2
+
+
+# Variance Inflation Factor
+vif2 <- vif(div_lm2)
+vif2         
+
+```
+
+
+#### Remove least significant variable and re-fit model
+```{r}
+
+# Fit 3rd Model, removing unemployed
+div_lm3 <- lm(divorce ~ femlab + marriage + birth, data=divusa)
+div_lm3_sum <- summary(div_lm3, cor=TRUE)
+div_lm3_sum
+
+
+               
+# correlation matrix
+
+corr3 <- cor(div_lm3_sum$correlation)[2:4, 2:4]
+p.mat3 <- cor_pmat(div_lm3_sum$correlation)[2:4, 2:4]
+
+ggcorr3 <- ggcorrplot(corr3, p.mat= p.mat3, hc.order = TRUE,
+    type = "lower", insig = "blank", lab=TRUE)
+
+ggcorr3
+plot(div_lm3)
+
+
+# Variance Inflation Factor
+vif3 <- vif(div_lm3)
+vif3         
+
+```
+
+
 ```

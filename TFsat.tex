@@ -1,0 +1,499 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={SAT study},
+  pdfauthor={Tyler Frankenberg},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{SAT study}
+\author{Tyler Frankenberg}
+\date{02/27/2022}
+
+\begin{document}
+\maketitle
+
+\hypertarget{import-packages}{%
+\subsection{Import packages}\label{import-packages}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(tidyverse)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{import-data}{%
+\subsection{Import data}\label{import-data}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{url }\OtherTok{\textless{}{-}} \StringTok{"https://raw.githubusercontent.com/curdferguson/data621/main/datasets/sat.txt"}
+
+\NormalTok{sat }\OtherTok{\textless{}{-}} \FunctionTok{read\_tsv}\NormalTok{(url, }\AttributeTok{skip =} \DecValTok{1}\NormalTok{, }\AttributeTok{col\_names =} \FunctionTok{c}\NormalTok{(}\StringTok{"state"}\NormalTok{, }\StringTok{"expend"}\NormalTok{, }\StringTok{"ratio"}\NormalTok{, }\StringTok{"salary"}\NormalTok{, }\StringTok{"takers"}\NormalTok{, }\StringTok{"verbal"}\NormalTok{, }\StringTok{"math"}\NormalTok{, }\StringTok{"total"}\NormalTok{), }\AttributeTok{show\_col\_types=}\ConstantTok{FALSE}\NormalTok{)}
+
+\NormalTok{sat }\OtherTok{\textless{}{-}} \FunctionTok{column\_to\_rownames}\NormalTok{(sat, }\AttributeTok{var=}\StringTok{"state"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{glimpse-dataset-structure-and-each-columns-summary-statistics}{%
+\subsection{Glimpse dataset structure and each column's summary
+statistics}\label{glimpse-dataset-structure-and-each-columns-summary-statistics}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sat }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{head}\NormalTok{(}\DecValTok{5}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##            expend ratio salary takers verbal math total
+## Alabama     4.405  17.2 31.144      8    491  538  1029
+## Alaska      8.963  17.6 47.951     47    445  489   934
+## Arizona     4.778  19.3 32.175     27    448  496   944
+## Arkansas    4.459  17.1 28.934      6    482  523  1005
+## California  4.992  24.0 41.078     45    417  485   902
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sat[,}\DecValTok{1}\SpecialCharTok{:}\DecValTok{4}\NormalTok{] }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{summary}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##      expend          ratio           salary          takers     
+##  Min.   :3.656   Min.   :13.80   Min.   :25.99   Min.   : 4.00  
+##  1st Qu.:4.882   1st Qu.:15.22   1st Qu.:30.98   1st Qu.: 9.00  
+##  Median :5.768   Median :16.60   Median :33.29   Median :28.00  
+##  Mean   :5.905   Mean   :16.86   Mean   :34.83   Mean   :35.24  
+##  3rd Qu.:6.434   3rd Qu.:17.57   3rd Qu.:38.55   3rd Qu.:63.00  
+##  Max.   :9.774   Max.   :24.30   Max.   :50.05   Max.   :81.00
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sat[,}\DecValTok{5}\SpecialCharTok{:}\DecValTok{7}\NormalTok{] }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{summary}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##      verbal           math           total       
+##  Min.   :401.0   Min.   :443.0   Min.   : 844.0  
+##  1st Qu.:427.2   1st Qu.:474.8   1st Qu.: 897.2  
+##  Median :448.0   Median :497.5   Median : 945.5  
+##  Mean   :457.1   Mean   :508.8   Mean   : 965.9  
+##  3rd Qu.:490.2   3rd Qu.:539.5   3rd Qu.:1032.0  
+##  Max.   :516.0   Max.   :592.0   Max.   :1107.0
+\end{verbatim}
+
+\hypertarget{anova}{%
+\subsection{ANOVA}\label{anova}}
+
+We construct a linear model with \texttt{expend}, \texttt{ratio}, and
+\texttt{salary} as predictors of the response variable \texttt{total}.
+
+Is the effect of these predictors on the response statistically
+significant? We use an F-test for Analysis of Variance to test whether
+any of the predictors' coefficients is statistically different from
+zero.
+
+Our F-statistic of 4.0662 is sufficiently greater than that of the null
+model, and our p-value of 0.01209 indicates this result would be the
+result of chance in only 0.12\% of hypothetical samples.
+
+We reject the null hypothesis that the coefficients of our predictors
+are statistically equivalent to zero, and take the effect of this model
+on the response as statistically significant at the 0.95 level.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sat\_lm1 }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(total }\SpecialCharTok{\textasciitilde{}}\NormalTok{ expend }\SpecialCharTok{+}\NormalTok{ ratio }\SpecialCharTok{+}\NormalTok{ salary, }\AttributeTok{data=}\NormalTok{sat)}
+\NormalTok{lm1\_sum }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(sat\_lm1)}
+\NormalTok{lm1\_sum}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = total ~ expend + ratio + salary, data = sat)
+## 
+## Residuals:
+##      Min       1Q   Median       3Q      Max 
+## -140.911  -46.740   -7.535   47.966  123.329 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 1069.234    110.925   9.639 1.29e-12 ***
+## expend        16.469     22.050   0.747   0.4589    
+## ratio          6.330      6.542   0.968   0.3383    
+## salary        -8.823      4.697  -1.878   0.0667 .  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 68.65 on 46 degrees of freedom
+## Multiple R-squared:  0.2096, Adjusted R-squared:  0.1581 
+## F-statistic: 4.066 on 3 and 46 DF,  p-value: 0.01209
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sat\_nullmod }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(total }\SpecialCharTok{\textasciitilde{}} \DecValTok{1}\NormalTok{, }\AttributeTok{data=}\NormalTok{sat)}
+
+\NormalTok{lm1\_anova }\OtherTok{\textless{}{-}} \FunctionTok{anova}\NormalTok{(sat\_nullmod, sat\_lm1)}
+\NormalTok{lm1\_anova}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Analysis of Variance Table
+## 
+## Model 1: total ~ 1
+## Model 2: total ~ expend + ratio + salary
+##   Res.Df    RSS Df Sum of Sq      F  Pr(>F)  
+## 1     49 274308                              
+## 2     46 216812  3     57496 4.0662 0.01209 *
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+\hypertarget{examine-the-effect-of-a-new-variable-using-anova-and-t-test}{%
+\subsection{Examine the effect of a new variable using ANOVA and
+T-test}\label{examine-the-effect-of-a-new-variable-using-anova-and-t-test}}
+
+We add the predictor \texttt{takers} to the model.
+
+Is the additon of this predictor on the response statistically
+significant? We can test this in two ways; using a t-test for the
+specific variable and using an F-test to compare the effect of the first
+and second models as a whole. Then we can show that the results of these
+two methods are actually the same.
+
+\hypertarget{t-test}{%
+\paragraph{T-test}\label{t-test}}
+
+first, we can output the regresion summary of the new model and observe
+the value of the t-statistic and p-value for \texttt{takers}.
+
+Our regression summary output gives a t-value of -12.559 and a p-value
+of 2.61e-16 for \texttt{takers}. This indicates the coefficient is about
+12.5 times the size of its standard error, and that we'd expect this to
+be the result of chance in well fewer than 0.01\% of hypothetical
+samples.
+
+We conclude by this result that we can reject the null hypothesis at the
+0.95\% level of statistical significance, and assume the impact of
+\texttt{takers} to be significant.
+
+\hypertarget{anova-1}{%
+\paragraph{ANOVA}\label{anova-1}}
+
+Second, we can use an F-test for Analysis of Variance between the new
+model and previous model to test whether the additional impact of the
+coefficient for \texttt{takers} is statistically different from zero.
+
+Our F-statistic of 157.74 is sufficiently greater than that of the model
+without \texttt{takers}, and our p-value of 2.607e-16 indicates this
+result would be the result of chance in well fewer than 0.01\% of
+hypothetical samples.
+
+We reject the null hypothesis that the difference in the coefficients of
+our predictors is statistically equivalent to zero, and take the effect
+of this model on the response as statistically significant at the 0.95
+level.
+
+\hypertarget{verify-equivalence}{%
+\paragraph{Verify equivalence}\label{verify-equivalence}}
+
+Finally, we can verify that our results from these two tests are the
+same. We expect that our ANOVA F statistic should be approximately the
+square of our t-value for the added variable \texttt{takers}, and that
+their p-values would be equal.
+
+As we see in our output below, the difference between the t-value
+squared and the F-statistic, as well as between the p-values, are each
+so small as to be functionally equivalent to zero.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# method 1 {-} regression summary output t{-}test}
+\NormalTok{sat\_lm2 }\OtherTok{\textless{}{-}} \FunctionTok{lm}\NormalTok{(total }\SpecialCharTok{\textasciitilde{}}\NormalTok{ expend }\SpecialCharTok{+}\NormalTok{ ratio }\SpecialCharTok{+}\NormalTok{ salary }\SpecialCharTok{+}\NormalTok{ takers, }\AttributeTok{data=}\NormalTok{sat)}
+\NormalTok{lm2\_sum }\OtherTok{\textless{}{-}} \FunctionTok{summary}\NormalTok{(sat\_lm2)}
+\NormalTok{lm2\_sum}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Call:
+## lm(formula = total ~ expend + ratio + salary + takers, data = sat)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -90.531 -20.855  -1.746  15.979  66.571 
+## 
+## Coefficients:
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 1045.9715    52.8698  19.784  < 2e-16 ***
+## expend         4.4626    10.5465   0.423    0.674    
+## ratio         -3.6242     3.2154  -1.127    0.266    
+## salary         1.6379     2.3872   0.686    0.496    
+## takers        -2.9045     0.2313 -12.559 2.61e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 32.7 on 45 degrees of freedom
+## Multiple R-squared:  0.8246, Adjusted R-squared:  0.809 
+## F-statistic: 52.88 on 4 and 45 DF,  p-value: < 2.2e-16
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# method 2 {-} ANOVAb}
+\NormalTok{lm2\_anova }\OtherTok{\textless{}{-}} \FunctionTok{anova}\NormalTok{(sat\_lm1, sat\_lm2)}
+\NormalTok{lm2\_anova}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Analysis of Variance Table
+## 
+## Model 1: total ~ expend + ratio + salary
+## Model 2: total ~ expend + ratio + salary + takers
+##   Res.Df    RSS Df Sum of Sq      F    Pr(>F)    
+## 1     46 216812                                  
+## 2     45  48124  1    168688 157.74 2.607e-16 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# verification}
+\NormalTok{(lm2\_sum}\SpecialCharTok{$}\NormalTok{coefficients[}\StringTok{"takers"}\NormalTok{, }\StringTok{"t value"}\NormalTok{])}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{{-}}\NormalTok{ lm2\_anova}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{F}\StringTok{\textasciigrave{}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1]           NA 2.273737e-13
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{(lm2\_sum}\SpecialCharTok{$}\NormalTok{coefficients[}\StringTok{"takers"}\NormalTok{, }\StringTok{"Pr(\textgreater{}|t|)"}\NormalTok{]) }\SpecialCharTok{{-}}\NormalTok{ lm2\_anova}\SpecialCharTok{$}\StringTok{\textasciigrave{}}\AttributeTok{Pr(\textgreater{}F)}\StringTok{\textasciigrave{}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1]            NA -7.494179e-30
+\end{verbatim}
+
+\hypertarget{regression-model-diagnostics}{%
+\subsection{Regression Model
+Diagnostics}\label{regression-model-diagnostics}}
+
+\hypertarget{constant-variance-linearity-of-relationship}{%
+\paragraph{Constant Variance \& Linearity of
+Relationship}\label{constant-variance-linearity-of-relationship}}
+
+We conduct diagnostics of our model \texttt{sat\_lm2}. First, we'll
+check the Constant Variance assumption by plotting the residuals versus
+the fitted y-values.
+
+While the range over which the residuals vary is about equal on the left
+and right hand sides, the distribution of points in the middle is skewed
+to the negative side of the range. The smoothed curve suggest adding a
+quadratic term to the model may be an appropriate transformation.
+
+There are also 3 outliers noted on the plot - the values for North
+Dakota, New Hampshire, and West Virginia need to be reviewed for
+validity and may factor in additional transformations to the model.
+
+Viewing the Scale-Location plot backs up our understanding of the model
+- the residuals have a constant spread but we have a problem in the
+shape of the model and thus the linearity of the relationship between
+predictors and response. We also see Utah surface as another outlier.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(sat\_lm2, }\DecValTok{1}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{TFsat_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(sat\_lm2, }\DecValTok{3}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{TFsat_files/figure-latex/unnamed-chunk-6-2.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#ggplot(sat\_lm2, aes(x=fitted(sat\_lm2), y=residuals(sat\_lm2))) + geom\_jitter() + geom\_hline(yintercept=0, color="blue") + xlab("Fitted") + ylab("Residuals")}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{normality-of-residuals}{%
+\paragraph{Normality of Residuals}\label{normality-of-residuals}}
+
+Next, we'll check for the normality of our distributed residuals. Using
+a quantile - quantile plot and a histogram of residuals, we can see that
+the shape of the distribution is approximately normal with some slight
+deviation from normality at the tails, accounted for by our known
+outliers plus another identified in the plot - Utah.
+
+Notably, our data point for West Virginia seems to skew the distribution
+of residuals slightly leftward in the histogram visualization. It's time
+we take a look at the influence of each of these outliers on the model
+as a whole.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(sat\_lm2, }\DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{TFsat_files/figure-latex/unnamed-chunk-7-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{ggplot}\NormalTok{(}\AttributeTok{data=}\NormalTok{sat\_lm2, }\FunctionTok{aes}\NormalTok{(}\AttributeTok{x=}\FunctionTok{residuals}\NormalTok{(sat\_lm2))) }\SpecialCharTok{+} \FunctionTok{geom\_histogram}\NormalTok{(}\AttributeTok{bins=}\DecValTok{15}\NormalTok{) }\SpecialCharTok{+} \FunctionTok{xlab}\NormalTok{(}\StringTok{"Residual"}\NormalTok{) }\SpecialCharTok{+} \FunctionTok{ylab}\NormalTok{(}\StringTok{"Frequency"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{TFsat_files/figure-latex/unnamed-chunk-7-2.pdf}
+
+\hypertarget{assessing-leverage}{%
+\paragraph{Assessing leverage}\label{assessing-leverage}}
+
+Looking at the residuals vs.~leverage plot below, we see that for the
+most part, our data including the points of high leverage cluster within
+the area between -2 and 2 standardized residuals.
+
+The point of most concern is Utah, which exerts the most influence over
+the dataset and falls just within the acceptable range of Cook's
+Distance (0.5). This is not enough of an anomaly to impact our
+assumptions of the model's validity.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{plot}\NormalTok{(sat\_lm2, }\DecValTok{5}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{TFsat_files/figure-latex/unnamed-chunk-8-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#ggplot(data=sat\_lm2, aes(x=residuals(sat\_lm2))) + geom\_histogram(bins=15) + xlab("Residual") + ylab("Frequency")}
+\end{Highlighting}
+\end{Shaded}
+
+
+\end{document}
